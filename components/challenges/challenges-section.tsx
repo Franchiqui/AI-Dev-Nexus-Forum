@@ -5,13 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Users, Trophy, Clock, ChevronRight, Star, Target, X } from 'lucide-react';
+import { Calendar, Users, Trophy, Clock, ChevronRight, Star, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Modal } from '@/components/ui/modal';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 
 interface Challenge {
   id: string;
@@ -49,63 +44,69 @@ const mockChallenges: Challenge[] = [
     description: 'Desarrolla un modelo LSTM/Transformer para detectar anomalías en datos financieros en tiempo real.',
     difficulty: 'intermediate',
     category: 'Time Series',
-    participants: 23,
-    maxParticipants: 50,
-    deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    reward: 'Cloud Credits + $300',
-    progress: 40,
+    participants: 78,
+    maxParticipants: 150,
+    deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+    reward: 'Certificación + Mentorship',
+    progress: 52,
     isFeatured: false,
-    tags: ['LSTM', 'Transformers', 'Finance']
+    tags: ['TensorFlow', 'LSTM', 'Finance']
   },
   {
     id: '3',
-    title: 'Bot Conversacional Multilingüe',
-    description: 'Crea un chatbot que pueda entender y responder en múltiples idiomas usando modelos de lenguaje grandes.',
-    difficulty: 'expert',
+    title: 'Chatbot Multilingüe con Contexto',
+    description: 'Crea un chatbot que mantenga contexto en conversaciones y soporte 3 idiomas simultáneamente.',
+    difficulty: 'intermediate',
     category: 'NLP',
-    participants: 67,
+    participants: 32,
     maxParticipants: 80,
-    deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-    reward: 'API Credits + $1000',
-    progress: 80,
+    deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    reward: 'API Credits + Featured Spot',
+    progress: 40,
     isFeatured: true,
-    tags: ['LLM', 'Translation', 'Chatbot']
+    tags: ['Transformers', 'Multilingual', 'ChatGPT']
   },
   {
     id: '4',
-    title: 'Clasificación de Sentimientos en Redes Sociales',
-    description: 'Analiza y clasifica el sentimiento de posts en redes sociales usando técnicas de NLP.',
+    title: 'Reconocimiento de Gestos en Tiempo Real',
+    description: 'Implementa un sistema de reconocimiento de gestos usando visión por computadora para control por gestos.',
     difficulty: 'beginner',
-    category: 'NLP',
-    participants: 89,
-    maxParticipants: 150,
-    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-    reward: 'Starter Credits + $100',
-    progress: 25,
+    category: 'Computer Vision',
+    participants: 120,
+    maxParticipants: 200,
+    deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+    reward: 'Hardware Kit',
+    progress: 60,
     isFeatured: false,
-    tags: ['Sentiment Analysis', 'Social Media', 'NLP']
+    tags: ['OpenCV', 'Real-time', 'MediaPipe']
   },
   {
     id: '5',
-    title: 'Generación de Arte con GANs',
-    description: 'Implementa una GAN para generar arte abstracto y explora diferentes arquitecturas.',
-    difficulty: 'intermediate',
-    category: 'Computer Vision',
-    participants: 34,
-    maxParticipants: 60,
-    deadline: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
-    reward: 'GPU Credits + $400',
-    progress: 55,
-    isFeatured: false,
-    tags: ['GANs', 'Art Generation', 'PyTorch']
+    title: 'Generación de Código con IA',
+    description: 'Desarrolla un modelo que genere código Python funcional a partir de descripciones en lenguaje natural.',
+    difficulty: 'expert',
+    category: 'Code Generation',
+    participants: 18,
+    maxParticipants: 50,
+    deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+    reward: 'Research Grant + Publication',
+    progress: 25,
+    isFeatured: true,
+    tags: ['Codex', 'GPT', 'Python']
   }
 ];
 
 const difficultyColors = {
-  'beginner': 'bg-green-500/20 text-green-400',
-  'intermediate': 'bg-yellow-500/20 text-yellow-400',
-  'advanced': 'bg-orange-500/20 text-orange-400',
-  'expert': 'bg-red-500/20 text-red-400',
+  beginner: 'bg-green-500/20 text-green-400 border-green-500/30',
+  intermediate: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  advanced: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  expert: 'bg-red-500/20 text-red-400 border-red-500/30'
+};
+
+const categoryColors: Record<string, string> = {
+  'Computer Vision': 'bg-blue-500/20 text-blue-400',
+  'NLP': 'bg-purple-500/20 text-purple-400',
+  'Time Series': 'bg-emerald-500/20 text-emerald-400',
   'Code Generation': 'bg-pink-500/20 text-pink-400'
 };
 
@@ -113,18 +114,6 @@ export default function ChallengesSection() {
   const [challenges, setChallenges] = useState < Challenge[] > ([]);
   const [selectedCategory, setSelectedCategory] = useState < string > ('all');
   const [loading, setLoading] = useState(true);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newChallenge, setNewChallenge] = useState({
-    title: '',
-    description: '',
-    difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced' | 'expert',
-    category: '',
-    maxParticipants: 50,
-    deadline: '',
-    reward: '',
-    tags: [] as string[],
-    currentTag: ''
-  });
 
   useEffect(() => {
     // Simular carga de datos
@@ -151,60 +140,6 @@ export default function ChallengesSection() {
     if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h`;
     return 'Finalizando';
-  };
-
-  const handleCreateChallenge = () => {
-    if (!newChallenge.title.trim() || !newChallenge.description.trim()) {
-      alert('Por favor, completa el título y descripción del reto');
-      return;
-    }
-
-    const newChallengeObj: Challenge = {
-      id: Date.now().toString(),
-      title: newChallenge.title,
-      description: newChallenge.description,
-      difficulty: newChallenge.difficulty,
-      category: newChallenge.category || 'General',
-      participants: 0,
-      maxParticipants: newChallenge.maxParticipants,
-      deadline: new Date(newChallenge.deadline),
-      reward: newChallenge.reward,
-      progress: 0,
-      isFeatured: false,
-      tags: newChallenge.tags
-    };
-
-    setChallenges([newChallengeObj, ...challenges]);
-    setNewChallenge({
-      title: '',
-      description: '',
-      difficulty: 'beginner',
-      category: '',
-      maxParticipants: 50,
-      deadline: '',
-      reward: '',
-      tags: [],
-      currentTag: ''
-    });
-    setIsCreateModalOpen(false);
-    alert('¡Reto creado exitosamente!');
-  };
-
-  const handleAddTag = () => {
-    if (newChallenge.currentTag.trim() && !newChallenge.tags.includes(newChallenge.currentTag.trim())) {
-      setNewChallenge(prev => ({
-        ...prev,
-        tags: [...prev.tags, prev.currentTag.trim()],
-        currentTag: ''
-      }));
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setNewChallenge(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
   };
 
   const getDifficultyIcon = (difficulty: Challenge['difficulty']) => {
@@ -235,342 +170,174 @@ export default function ChallengesSection() {
   }
 
   return (
-    <>
-      <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold">Retos de IA</CardTitle>
-              <CardDescription className="text-gray-400">
-                Participa en desafíos de IA y gana recompensas
-              </CardDescription>
-            </div>
+    <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl font-bold flex items-center gap-2">
+              <Trophy className="w-6 h-6 text-yellow-500" />
+              Retos de IA
+            </CardTitle>
+            <CardDescription>
+              Participa en retos colaborativos y gana premios
+            </CardDescription>
+          </div>
+          <Button variant="outline" className="border-gray-700 hover:bg-gray-800">
+            Ver todos los retos
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+
+        {/* Filtros de categoría */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {categories.map(category => (
             <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              key={category}
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "rounded-full",
+                selectedCategory === category
+                  ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                  : "text-gray-400 hover:text-gray-300 hover:bg-gray-800"
+              )}
+              onClick={() => setSelectedCategory(category)}
             >
+              {category === 'all' ? 'Todos' : category}
+            </Button>
+          ))}
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <div className="space-y-6">
+          {filteredChallenges.map(challenge => (
+            <div
+              key={challenge.id}
+              className={cn(
+                "group relative p-6 rounded-xl border transition-all duration-300 hover:border-gray-600 hover:shadow-xl",
+                challenge.isFeatured
+                  ? "bg-gradient-to-r from-gray-900/50 to-gray-800/50 border-yellow-500/30"
+                  : "bg-gray-900/30 border-gray-800"
+              )}
+            >
+              {challenge.isFeatured && (
+                <div className="absolute -top-2 -right-2">
+                  <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                    <Star className="w-3 h-3 mr-1" />
+                    Destacado
+                  </Badge>
+                </div>
+              )}
+
+              <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+                <div className="flex-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-400 transition-colors">
+                        {challenge.title}
+                      </h3>
+                      <p className="text-gray-400 text-sm mb-4">
+                        {challenge.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
+                    <Badge className={difficultyColors[challenge.difficulty]}>
+                      <span className="flex items-center gap-1">
+                        {getDifficultyIcon(challenge.difficulty)}
+                        {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
+                      </span>
+                    </Badge>
+
+                    <Badge className={categoryColors[challenge.category] || "bg-gray-700 text-gray-300"}>
+                      {challenge.category}
+                    </Badge>
+
+                    {challenge.tags.map(tag => (
+                      <Badge key={tag} variant="outline" className="text-gray-400 border-gray-700">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Users className="w-4 h-4" />
+                          <span>{challenge.participants}/{challenge.maxParticipants}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatTimeRemaining(challenge.deadline)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-yellow-400">
+                          <Trophy className="w-4 h-4" />
+                          <span>{challenge.reward}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Progreso del reto</span>
+                        <span className="text-blue-400">{challenge.progress}%</span>
+                      </div>
+                      <Progress value={challenge.progress} className="h-2 bg-gray-800" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:w-48 flex flex-col gap-3">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    Unirse al Reto
+                  </Button>
+                  <Button variant="outline" className="w-full border-gray-700 hover:bg-gray-800">
+                    Ver Detalles
+                  </Button>
+                  <div className="text-center text-sm text-gray-500">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Finaliza: {challenge.deadline.toLocaleDateString('es-ES', {
+                      day: 'numeric',
+                      month: 'short'
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredChallenges.length === 0 && (
+          <div className="text-center py-12">
+            <Trophy className="w-16 h-16 text-gray-700 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-400 mb-2">
+              No hay retos en esta categoría
+            </h3>
+            <p className="text-gray-500">
+              Prueba con otra categoría o crea tu propio reto
+            </p>
+          </div>
+        )}
+
+        <div className="mt-8 pt-6 border-t border-gray-800">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-400">
+              <span className="text-blue-400 font-semibold">{challenges.length}</span> retos activos •
+              <span className="text-green-400 font-semibold mx-2">
+                {challenges.reduce((acc, c) => acc + c.participants, 0)}
+              </span>
+              participantes totales
+            </div>
+            <Button variant="outline" className="border-gray-700 hover:bg-gray-800">
               <Trophy className="w-4 h-4 mr-2" />
               Crear Nuevo Reto
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 mb-6 flex-wrap">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-                className={cn(
-                  "transition-all duration-200",
-                  selectedCategory === category
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "border-gray-600 text-gray-300 hover:bg-gray-800"
-                )}
-              >
-                {category === 'all' ? 'Todos' : category}
-              </Button>
-            ))}
-          </div>
-
-          <div className="space-y-4">
-            {filteredChallenges.map((challenge) => (
-              <Card
-                key={challenge.id}
-                className={cn(
-                  "bg-gray-800/50 border-gray-700 hover:border-blue-500/50 transition-all duration-200 cursor-pointer group",
-                  challenge.isFeatured && "ring-2 ring-yellow-500/20"
-                )}
-              >
-                <div className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-                    {/* Left side - Main info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-3">
-                            {getDifficultyIcon(challenge.difficulty)}
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "text-xs",
-                                difficultyColors[challenge.difficulty]
-                              )}
-                            >
-                              {challenge.difficulty}
-                            </Badge>
-                            {challenge.isFeatured && (
-                              <Badge className="bg-yellow-500/20 text-yellow-400 text-xs">
-                                <Star className="w-3 h-3 mr-1" />
-                                Destacado
-                              </Badge>
-                            )}
-                          </div>
-                          <CardTitle className="text-xl leading-tight group-hover:text-blue-400 transition-colors mb-2">
-                            {challenge.title}
-                          </CardTitle>
-                          <CardDescription className="text-gray-400 line-clamp-2">
-                            {challenge.description}
-                          </CardDescription>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        {challenge.tags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs bg-gray-700/50 text-gray-300"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Right side - Meta info and actions */}
-                    <div className="lg:w-80 lg:flex-shrink-0 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">
-                            <Users className="w-4 h-4" />
-                            <span className="text-sm">Participantes</span>
-                          </div>
-                          <div className="font-semibold text-white">
-                            {challenge.participants}/{challenge.maxParticipants}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-sm">Tiempo</span>
-                          </div>
-                          <div className="font-semibold text-white">
-                            {formatTimeRemaining(challenge.deadline)}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="border-gray-600 text-gray-300">
-                          {challenge.category}
-                        </Badge>
-                        <span className="text-green-400 font-medium">{challenge.reward}</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-gray-400">
-                          <span>Progreso</span>
-                          <span>{challenge.progress}%</span>
-                        </div>
-                        <Progress value={challenge.progress} className="h-2" />
-                      </div>
-
-                      <Button
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                        size="sm"
-                      >
-                        Participar
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {filteredChallenges.length === 0 && (
-            <div className="text-center py-12">
-              <Trophy className="w-12 h-12 mx-auto text-gray-600 mb-4" />
-              <h3 className="text-lg font-medium text-gray-300 mb-2">
-                No hay retos en esta categoría
-              </h3>
-              <p className="text-gray-500">
-                Sé el primero en crear un reto para esta categoría
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Modal para crear nuevo reto */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Crear Nuevo Reto"
-        description="Comparte tu reto con la comunidad de IA"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-2">
-              Título del Reto
-            </Label>
-            <Input
-              id="title"
-              value={newChallenge.title}
-              onChange={(e) => setNewChallenge(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Ej: Optimización de modelo de lenguaje"
-              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
-              Descripción
-            </Label>
-            <Textarea
-              id="description"
-              value={newChallenge.description}
-              onChange={(e) => setNewChallenge(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe los objetivos y requisitos del reto..."
-              rows={3}
-              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="difficulty" className="block text-sm font-medium text-gray-300 mb-2">
-                Dificultad
-              </Label>
-              <Select
-                value={newChallenge.difficulty}
-                onValueChange={(value: 'beginner' | 'intermediate' | 'advanced' | 'expert') =>
-                  setNewChallenge(prev => ({ ...prev, difficulty: value }))
-                }
-              >
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="beginner">Principiante</SelectItem>
-                  <SelectItem value="intermediate">Intermedio</SelectItem>
-                  <SelectItem value="advanced">Avanzado</SelectItem>
-                  <SelectItem value="expert">Experto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-2">
-                Categoría
-              </Label>
-              <Input
-                id="category"
-                value={newChallenge.category}
-                onChange={(e) => setNewChallenge(prev => ({ ...prev, category: e.target.value }))}
-                placeholder="Ej: Computer Vision"
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="maxParticipants" className="block text-sm font-medium text-gray-300 mb-2">
-                Participantes Máximos
-              </Label>
-              <Input
-                id="maxParticipants"
-                type="number"
-                value={newChallenge.maxParticipants}
-                onChange={(e) => setNewChallenge(prev => ({ ...prev, maxParticipants: parseInt(e.target.value) || 50 }))}
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="deadline" className="block text-sm font-medium text-gray-300 mb-2">
-                Fecha Límite
-              </Label>
-              <Input
-                id="deadline"
-                type="date"
-                value={newChallenge.deadline}
-                onChange={(e) => setNewChallenge(prev => ({ ...prev, deadline: e.target.value }))}
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="reward" className="block text-sm font-medium text-gray-300 mb-2">
-              Recompensa
-            </Label>
-            <Input
-              id="reward"
-              value={newChallenge.reward}
-              onChange={(e) => setNewChallenge(prev => ({ ...prev, reward: e.target.value }))}
-              placeholder="Ej: $500 + GPU Credits"
-              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="tags" className="block text-sm font-medium text-gray-300 mb-2">
-              Etiquetas
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="tags"
-                value={newChallenge.currentTag}
-                onChange={(e) => setNewChallenge(prev => ({ ...prev, currentTag: e.target.value }))}
-                placeholder="Añadir etiqueta..."
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-              />
-              <Button
-                type="button"
-                onClick={handleAddTag}
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
-              >
-                Añadir
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mt-2">
-              {newChallenge.tags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="bg-gray-700 text-gray-300 flex items-center gap-1"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ml-1 hover:text-red-400"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateModalOpen(false)}
-              className="border-gray-600"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleCreateChallenge}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-            >
-              <Trophy className="w-4 h-4 mr-2" />
-              Crear Reto
-            </Button>
-          </div>
         </div>
-      </Modal>
-    </>
+      </CardContent>
+    </Card>
   );
 }
-
