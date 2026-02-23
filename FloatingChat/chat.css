@@ -1,0 +1,220 @@
+/*
+ * FloatingChat/chat.css
+ *
+ * Lista de colores del chat con códigos hexadecimales:
+ *
+ * 1. Fondo del chat: --chat-bg
+ * 2. Fondo de la lista de usuarios: --bg-user-list
+ * 3. Hover en usuarios: --bg-user-hover
+ * 4. Botones hover: --btn-hover
+ * 5. Textos: --text-primary, --text-muted
+ * 6. Bordes: --border-color
+ * 7. Botones: --btn-primary, --btn-destructive, --btn-secondary, --btn-text
+ */
+
+/* Utility classes using CSS custom properties for easy color editing */
+:root {
+  /* Tema claro */
+  --chat-bg: #b1b0b0;
+  --bg-user-list: #7f8e9e;
+  --bg-user-hover: rgba(239, 227, 227, 0.05);
+  --btn-hover: #828894;
+  --text-primary: #ccd2de;
+  --text-muted: #6b7280;
+  --border-color: #e5e7eb;
+  --btn-primary: #3b82f6;
+  --btn-destructive: #ef4444;
+  --btn-secondary: #e5e7eb;
+  --btn-text: #ffffff;
+  --btn-destructive-text: #ffffff;
+
+  /* Tarjetas de usuario */
+  --user-card-bg: #a39a9a;
+  --user-card-hover: #abafb9;
+  --user-card-border: #6f747e;
+  --user-status-online: #10b913; /* Verde para usuarios en línea */
+  --user-status-offline: #e7eaf1; /* Gris para usuarios desconectados */
+  --user-avatar-bg: #9196a0;
+}
+
+.dark {
+  /* Tema oscuro */
+  --chat-bg: #53535b;
+  --bg-user-list: #454549;
+  --bg-user-hover: #374151;
+  --btn-hover: #4b5563;
+  --text-primary: #f9fafb;
+  --text-muted: #9ca3af;
+  --border-color: #bbc2cb;
+  --btn-primary: #0cc685;
+  --btn-destructive: #b91c1c;
+  --btn-secondary: #374151;
+  --btn-text: #f9fafb;
+  --btn-destructive-text: #f9fafb;
+
+  /* Tarjetas de usuario - Tema oscuro */
+  --user-card-bg: #1f2937;
+  --user-card-hover: #374151;
+  --user-card-border: #374151;
+  --user-status-online: #10b981; /* Mismo verde para consistencia */
+  --user-status-offline: #6b7280; /* Un gris más claro para mejor contraste */
+  --user-avatar-bg: #374151;
+}
+
+/* Chat background */
+.chat-messages-background {
+  background-color: var(--chat-bg);
+}
+
+/* User list and card backgrounds */
+.user-list-bg {
+  background-color: var(--bg-user-list);
+}
+
+.user-list-hover {
+  background-color: var(--bg-user-hover);
+}
+
+.user-card-bg {
+  background-color: var(--user-card-bg);
+}
+
+.user-card-hover {
+  background-color: var(--user-card-hover);
+}
+
+.user-card-border {
+  border-color: var(--user-card-border);
+}
+
+/* Avatar backgrounds */
+.avatar-bg {
+  background-color: var(--user-avatar-bg);
+}
+
+/* Button hover states */
+.btn-hover-bg {
+  background-color: var(--btn-hover);
+}
+
+/* Status indicators */
+.status-online {
+  background-color: var(--user-status-online);
+}
+
+.status-offline {
+  background-color: var(--user-status-offline);
+}
+
+/* Status circle colors */
+.status-circle-online {
+  color: var(--user-status-online);
+}
+
+.status-circle-offline {
+  color: var(--user-status-offline);
+}
+
+/* Text colors */
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+/* Border colors */
+.border-custom {
+  border-color: var(--border-color);
+}
+
+/* Button colors */
+.btn-primary-bg {
+  background-color: var(--btn-primary);
+}
+
+.btn-secondary-bg {
+  background-color: var(--btn-secondary);
+}
+
+.btn-destructive-bg {
+  background-color: var(--btn-destructive);
+}
+
+.btn-text-color {
+  color: var(--btn-text);
+}
+
+.btn-destructive-text-color {
+  color: var(--btn-destructive-text);
+}
+
+/* Dark theme overrides */
+.dark .user-list-bg {
+  background-color: var(--bg-user-list);
+}
+
+.dark .user-list-hover {
+  background-color: var(--bg-user-hover);
+}
+
+.dark .user-card-bg {
+  background-color: var(--user-card-bg);
+}
+
+.dark .user-card-hover {
+  background-color: var(--user-card-hover);
+}
+
+.dark .avatar-bg {
+  background-color: var(--user-avatar-bg);
+}
+
+.dark .status-online {
+  background-color: var(--user-status-online);
+}
+
+.dark .status-offline {
+  background-color: var(--user-status-offline);
+}
+
+.dark .status-circle-online {
+  color: var(--user-status-online);
+}
+
+.dark .status-circle-offline {
+  color: var(--user-status-offline);
+}
+
+.dark .text-primary {
+  color: var(--text-primary);
+}
+
+.dark .text-muted {
+  color: var(--text-muted);
+}
+
+.dark .border-custom {
+  border-color: var(--border-color);
+}
+
+.dark .btn-primary-bg {
+  background-color: var(--btn-primary);
+}
+
+.dark .btn-secondary-bg {
+  background-color: var(--btn-secondary);
+}
+
+.dark .btn-destructive-bg {
+  background-color: var(--btn-destructive);
+}
+
+.dark .btn-text-color {
+  color: var(--btn-text);
+}
+
+.dark .btn-destructive-text-color {
+  color: var(--btn-destructive-text);
+}
