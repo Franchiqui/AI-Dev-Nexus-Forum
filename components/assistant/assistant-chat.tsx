@@ -4,12 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Send, Bot, User, Sparkles, Loader2, ThumbsUp, ThumbsDown, Copy, RefreshCw, Trash2, History, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Slider } from '@radix-ui/react-slider';
+import { toast } from 'sonner';
+import { Modal } from '../ui/modal';
 
 type MessageType = 'text' | 'system';
 type MessageStatus = 'sending' | 'sent' | 'error';
@@ -97,11 +101,19 @@ const INITIAL_MESSAGES: ExtendedChatMessage[] = [
 ];
 
 export default function AssistantChat() {
-  const [messages, setMessages] = useState<ExtendedChatMessage[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState < ExtendedChatMessage[] > (INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [modelConfig, setModelConfig] = useState({
+    apiUrl: '',
+    apiKey: '',
+    modelName: 'gpt-3.5-turbo',
+    temperature: 0.7,
+    maxTokens: 1000
+  });
+  const scrollAreaRef = useRef < HTMLDivElement > (null);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -109,7 +121,7 @@ export default function AssistantChat() {
     }
   }, [messages]);
 
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef < HTMLTextAreaElement > (null);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -158,9 +170,9 @@ export default function AssistantChat() {
         dislikes: 0
       };
 
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === userMessage.id 
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === userMessage.id
             ? { ...msg, status: 'sent' as const }
             : msg
         ).concat(assistantMessage)
@@ -181,10 +193,10 @@ export default function AssistantChat() {
       prev.map(msg =>
         msg.id === messageId
           ? {
-              ...msg,
-              likes: (msg.likes || 0) + 1,
-              isHelpful: true
-            }
+            ...msg,
+            likes: (msg.likes || 0) + 1,
+            isHelpful: true
+          }
           : msg
       )
     );
@@ -195,10 +207,10 @@ export default function AssistantChat() {
       prev.map(msg =>
         msg.id === messageId
           ? {
-              ...msg,
-              dislikes: (msg.dislikes || 0) + 1,
-              isHelpful: false
-            }
+            ...msg,
+            dislikes: (msg.dislikes || 0) + 1,
+            isHelpful: false
+          }
           : msg
       )
     );
@@ -225,7 +237,7 @@ export default function AssistantChat() {
 
   const generateResponse = (userInput: string): string => {
     const inputLower = userInput.toLowerCase();
-    
+
     if (inputLower.includes('transformer') || inputLower.includes('attention')) {
       return `Los transformers revolucionaron el NLP con el mecanismo de atención. Algunos puntos clave:
 
@@ -236,7 +248,7 @@ export default function AssistantChat() {
 
 ¿Te interesa ver una implementación práctica o entender algún concepto específico?`;
     }
-    
+
     if (inputLower.includes('pytorch') || inputLower.includes('tensorflow')) {
       return `Comparativa PyTorch vs TensorFlow:
 
@@ -254,7 +266,7 @@ export default function AssistantChat() {
 
 ¿Para qué tipo de proyecto necesitas elegir?`;
     }
-    
+
     if (inputLower.includes('optimizar') || inputLower.includes('rendimiento')) {
       return `Para optimizar modelos de ML:
 
@@ -266,7 +278,7 @@ export default function AssistantChat() {
 
 ¿Qué tipo de modelo y hardware estás usando?`;
     }
-    
+
     if (inputLower.includes('error') || inputLower.includes('debug')) {
       return `Para debugging de modelos de IA:
 
@@ -278,7 +290,7 @@ export default function AssistantChat() {
 
 ¿Puedes compartir el error específico o el código?`;
     }
-    
+
     return `Entiendo que preguntas sobre: "${userInput}"
 
 Como asistente especializado en desarrollo de IA, puedo ayudarte con:
@@ -300,234 +312,346 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
   const formatMessageTime = formatTime;
 
   return (
-    <Card className="border-gray-700 bg-gray-900/50 backdrop-blur-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8 border border-blue-500/20">
-              <AvatarFallback className="bg-blue-900/30 text-blue-400">
-                <Bot className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-lg">Asistente IA</CardTitle>
-              <CardDescription className="text-gray-400">
-                Asistente especializado en desarrollo de IA
-              </CardDescription>
+    <>
+      <Card className="border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-8 w-8 border border-blue-500/20">
+                <AvatarFallback className="bg-blue-900/30 text-blue-400">
+                  <Bot className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-lg">Asistente IA</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Asistente especializado en desarrollo de IA
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-green-500/30 text-green-400">
+              En línea
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pb-4">
+          {/* Quick Actions */}
+          <div className="mb-4">
+            <p className="text-sm text-gray-400 mb-2">Acciones rápidas:</p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_ACTIONS.map(action => (
+                <Button
+                  key={action.id}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
+                  onClick={() => handleQuickAction(action.prompt)}
+                >
+                  {action.icon}
+                  <span className="ml-1">{action.label}</span>
+                </Button>
+              ))}
             </div>
           </div>
-          <Badge variant="outline" className="border-green-500/30 text-green-400">
-            En línea
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pb-4">
-        {/* Quick Actions */}
-        <div className="mb-4">
-          <p className="text-sm text-gray-400 mb-2">Acciones rápidas:</p>
-          <div className="flex flex-wrap gap-2">
-            {QUICK_ACTIONS.map(action => (
-              <Button
-                key={action.id}
-                variant="outline"
-                size="sm"
-                className="text-xs border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
-                onClick={() => handleQuickAction(action.prompt)}
-              >
-                {action.icon}
-                <span className="ml-1">{action.label}</span>
-              </Button>
-            ))}
-          </div>
-        </div>
 
-        {/* Chat Messages */}
-        <ScrollArea 
-          ref={scrollAreaRef}
-          className="h-[400px] rounded-lg border border-gray-800 p-4"
-        >
-          <div className="space-y-4">
-            {messages.map(message => (
-              <div
-                key={message.id}
-                className={cn(
-                  'flex gap-3',
-                  message.type === 'text' ? 'flex-row-reverse' : 'flex-row'
-                )}
-              >
-                <Avatar className={cn(
-                  'h-8 w-8',
-                  message.type === 'text' 
-                    ? 'border border-blue-500/20' 
-                    : 'border border-purple-500/20'
-                )}>
-                  <AvatarFallback className={cn(
+          {/* Chat Messages */}
+          <ScrollArea
+            ref={scrollAreaRef}
+            className="h-[400px] rounded-lg border border-gray-800 p-4"
+          >
+            <div className="space-y-4">
+              {messages.map(message => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    'flex gap-3',
+                    message.type === 'text' ? 'flex-row-reverse' : 'flex-row'
+                  )}
+                >
+                  <Avatar className={cn(
+                    'h-8 w-8',
                     message.type === 'text'
-                      ? 'bg-blue-900/30 text-blue-400'
-                      : 'bg-purple-900/30 text-purple-400'
+                      ? 'border border-blue-500/20'
+                      : 'border border-purple-500/20'
                   )}>
-                    {message.type === 'text' ? (
-                      <User className="h-4 w-4" />
-                    ) : (
-                      <Bot className="h-4 w-4" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className={cn(
-                  'flex-1 space-y-1',
-                  message.type === 'text' ? 'items-end' : 'items-start'
-                )}>
+                    <AvatarFallback className={cn(
+                      message.type === 'text'
+                        ? 'bg-blue-900/30 text-blue-400'
+                        : 'bg-purple-900/30 text-purple-400'
+                    )}>
+                      {message.type === 'text' ? (
+                        <User className="h-4 w-4" />
+                      ) : (
+                        <Bot className="h-4 w-4" />
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+
                   <div className={cn(
-                    'rounded-2xl px-4 py-2 max-w-[85%]',
-                    message.type === 'text'
-                      ? 'bg-blue-500/20 text-blue-100 border border-blue-500/30'
-                      : 'bg-gray-800/70 text-gray-100 border border-gray-700'
+                    'flex-1 space-y-1',
+                    message.type === 'text' ? 'items-end' : 'items-start'
                   )}>
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                    
-                    {message.type !== 'text' && (
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-700/50">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs hover:bg-gray-700"
-                          onClick={() => handleLike(message.id)}
-                        >
-                          <ThumbsUp className="h-3 w-3 mr-1" />
-                          {message.likes || 0}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs hover:bg-gray-700"
-                          onClick={() => handleDislike(message.id)}
-                        >
-                          <ThumbsDown className="h-3 w-3 mr-1" />
-                          {message.dislikes || 0}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs hover:bg-gray-700"
-                          onClick={() => handleCopy(message.content)}
-                        >
-                          <Copy className="h-3 w-3 mr-1" />
-                          Copiar
-                        </Button>
-                      </div>
-                    )}
+                    <div className={cn(
+                      'rounded-2xl px-4 py-2 max-w-[85%]',
+                      message.type === 'text'
+                        ? 'bg-blue-500/20 text-blue-100 border border-blue-500/30'
+                        : 'bg-gray-800/70 text-gray-100 border border-gray-700'
+                    )}>
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+
+                      {message.type !== 'text' && (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-700/50">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs hover:bg-gray-700"
+                            onClick={() => handleLike(message.id)}
+                          >
+                            <ThumbsUp className="h-3 w-3 mr-1" />
+                            {message.likes || 0}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs hover:bg-gray-700"
+                            onClick={() => handleDislike(message.id)}
+                          >
+                            <ThumbsDown className="h-3 w-3 mr-1" />
+                            {message.dislikes || 0}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs hover:bg-gray-700"
+                            onClick={() => handleCopy(message.content)}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copiar
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formatMessageTime(message.createdAt)}
+                    </p>
                   </div>
-                  
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formatMessageTime(message.createdAt)}
-                  </p>
                 </div>
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8 border border-purple-500/20">
-                  <AvatarFallback className="bg-purple-900/30 text-purple-400">
-                    <Bot className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-1">
-                  <div className="rounded-2xl px-4 py-2 max-w-[85%] bg-gray-800/70 text-gray-100 border border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></div>
-                        <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+              ))}
+
+              {isLoading && (
+                <div className="flex gap-3">
+                  <Avatar className="h-8 w-8 border border-purple-500/20">
+                    <AvatarFallback className="bg-purple-900/30 text-purple-400">
+                      <Bot className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-1">
+                    <div className="rounded-2xl px-4 py-2 max-w-[85%] bg-gray-800/70 text-gray-100 border border-gray-700">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></div>
+                          <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                        <span className="text-sm text-gray-400">El asistente está pensando...</span>
                       </div>
-                      <span className="text-sm text-gray-400">El asistente está pensando...</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+              )}
+            </div>
+          </ScrollArea>
 
-        {/* Input Area */}
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2">
+          {/* Input Area */}
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
+                onClick={handleClearChat}
+                disabled={messages.length === 0 || isLoading}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Limpiar
+              </Button>
+
+              <div className="flex-1 flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
+                  onClick={handleToggleHistory}
+                >
+                  <History className="h-4 w-4 mr-1" />
+                  Historial
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
+                  onClick={handleExportChat}
+                  disabled={messages.length === 0}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Exportar
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Escribe tu pregunta sobre IA, desarrollo, modelos..."
+                className="min-h-[80px] resize-none border-gray-700 bg-gray-900/50 focus:border-blue-500/50 focus:ring-blue-500/20"
+                disabled={isLoading}
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!input.trim() || isLoading}
+                className="self-end bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span>En línea</span>
+                </div>
+                <span>{messages.length} mensajes</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-gray-400 hover:text-gray-300"
+                  onClick={() => setIsConfigModalOpen(true)}
+                >
+                  Configurar Modelo
+                </Button>
+              </div>
+              <div className="flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                <span>Powered by AI-Dev Nexus</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>,
+
+      {/* Modal de configuración del modelo */}
+      <Modal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        title="Configurar Modelo de IA"
+        description="Conecta tu asistente con un modelo real mediante API"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="api-url">URL de la API *</Label>
+            <Input
+              id="api-url"
+              value={modelConfig.apiUrl}
+              onChange={(e) => setModelConfig(prev => ({ ...prev, apiUrl: e.target.value }))}
+              placeholder="https://api.openai.com/v1/chat/completions"
+              className="mt-1 bg-gray-800 border-gray-700"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              URL del endpoint de la API (OpenAI, Anthropic, Ollama, etc.)
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="api-key">API Key</Label>
+            <Input
+              id="api-key"
+              type="password"
+              value={modelConfig.apiKey}
+              onChange={(e) => setModelConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+              placeholder="sk-..."
+              className="mt-1 bg-gray-800 border-gray-700"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Tu clave API (se almacena localmente en el navegador)
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="model-name">Nombre del Modelo</Label>
+              <Input
+                id="model-name"
+                value={modelConfig.modelName}
+                onChange={(e) => setModelConfig(prev => ({ ...prev, modelName: e.target.value }))}
+                placeholder="gpt-3.5-turbo"
+                className="mt-1 bg-gray-800 border-gray-700"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="temperature">Temperatura: {modelConfig.temperature}</Label>
+              <Slider
+                id="temperature"
+                min={0}
+                max={2}
+                step={0.1}
+                value={[modelConfig.temperature]}
+                onValueChange={(value) => setModelConfig(prev => ({ ...prev, temperature: value[0] }))}
+                className="mt-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="max-tokens">Tokens Máximos</Label>
+            <Input
+              id="max-tokens"
+              type="number"
+              value={modelConfig.maxTokens}
+              onChange={(e) => setModelConfig(prev => ({ ...prev, maxTokens: parseInt(e.target.value) || 1000 }))}
+              className="mt-1 bg-gray-800 border-gray-700"
+              min="1"
+              max="8000"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
             <Button
               variant="outline"
-              size="sm"
-              className="border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
-              onClick={handleClearChat}
-              disabled={messages.length === 0 || isLoading}
+              onClick={() => setIsConfigModalOpen(false)}
+              className="border-gray-600"
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Limpiar
+              Cancelar
             </Button>
-            
-            <div className="flex-1 flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
-                onClick={handleToggleHistory}
-              >
-                <History className="h-4 w-4 mr-1" />
-                Historial
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/10"
-                onClick={handleExportChat}
-                disabled={messages.length === 0}
-              >
-                <Download className="h-4 w-4 mr-1" />
-                Exportar
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <Textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe tu pregunta sobre IA, desarrollo, modelos..."
-              className="min-h-[80px] resize-none border-gray-700 bg-gray-900/50 focus:border-blue-500/50 focus:ring-blue-500/20"
-              disabled={isLoading}
-            />
             <Button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || isLoading}
-              className="self-end bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              onClick={() => {
+                if (!modelConfig.apiUrl.trim()) {
+                  alert('Por favor, ingresa la URL de la API');
+                  return;
+                }
+                setIsConfigModalOpen(false);
+                toast.success('Configuración guardada correctamente');
+              }}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
+              Guardar Configuración
             </Button>
-          </div>
-          
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                <span>En línea</span>
-              </div>
-              <span>{messages.length} mensajes</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Sparkles className="h-3 w-3" />
-              <span>Powered by AI-Dev Nexus</span>
-            </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </Modal>
+    </>
   );
 }
 
