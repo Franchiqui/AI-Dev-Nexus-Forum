@@ -8,6 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Transition } from '@headlessui/react';
 import { MagnifyingGlassIcon, Bars3Icon, XMarkIcon, UserCircleIcon, BellIcon, ChatBubbleLeftRightIcon, ComputerDesktopIcon, CodeBracketIcon, FireIcon } from '@heroicons/react/24/outline';
+import { Bot } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';

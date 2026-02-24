@@ -408,11 +408,12 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
 ¿Puedes proporcionar más detalles o código específico para ayudarte mejor?`;
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const formatMessageTime = (date: Date) => {
+    // Usar un formato consistente que no dependa del locale del servidor/cliente
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
-
-  const formatMessageTime = formatTime;
 
   return (
     <>
