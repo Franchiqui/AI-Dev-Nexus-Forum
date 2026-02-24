@@ -115,6 +115,28 @@ export default function AssistantChat() {
   });
   const scrollAreaRef = useRef < HTMLDivElement > (null);
 
+  // Cargar configuración guardada al montar el componente
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('assistant-model-config');
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig);
+        setModelConfig(prev => ({ ...prev, ...config }));
+      } catch (error) {
+        console.error('Error al cargar configuración guardada:', error);
+      }
+    }
+  }, []);
+
+  // Función para guardar configuración en localStorage
+  const saveConfig = (config: typeof modelConfig) => {
+    try {
+      localStorage.setItem('assistant-model-config', JSON.stringify(config));
+    } catch (error) {
+      console.error('Error al guardar configuración:', error);
+    }
+  };
+
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
@@ -157,11 +179,59 @@ export default function AssistantChat() {
     setIsLoading(true);
     setIsTyping(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Verificar si hay configuración de API
+      if (!modelConfig.apiUrl.trim()) {
+        throw new Error('No hay configuración de API. Por favor, configura el modelo en los ajustes.');
+      }
+
+      // Preparar mensajes para la API
+      const apiMessages = [
+        {
+          role: 'system',
+          content: 'Eres un asistente especializado en desarrollo de IA y machine learning. Ayudas a los desarrolladores con explicaciones de conceptos, revisión de código, optimización de modelos, debugging y mejores prácticas. Responde en español de manera clara y profesional.'
+        },
+        ...messages
+          .filter(msg => msg.type === 'text' || msg.type === 'system')
+          .map(msg => ({
+            role: msg.type === 'text' ? 'user' : 'assistant',
+            content: msg.content
+          })),
+        {
+          role: 'user',
+          content: input
+        }
+      ];
+
+      // Hacer llamada a la API
+      const response = await fetch(modelConfig.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(modelConfig.apiKey.trim() && {
+            'Authorization': `Bearer ${modelConfig.apiKey.trim()}`
+          })
+        },
+        body: JSON.stringify({
+          model: modelConfig.modelName,
+          messages: apiMessages,
+          temperature: modelConfig.temperature,
+          max_tokens: modelConfig.maxTokens,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const assistantContent = data.choices?.[0]?.message?.content || 'Lo siento, no pude generar una respuesta.';
+
       const assistantMessage: ExtendedChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: generateResponse(input),
+        content: assistantContent,
         type: 'text',
         createdAt: new Date(),
         roomId: 'assistant-chat',
@@ -177,9 +247,42 @@ export default function AssistantChat() {
             : msg
         ).concat(assistantMessage)
       );
+
+    } catch (error) {
+      console.error('Error en llamada a API:', error);
+
+      // Actualizar estado del mensaje de usuario a error
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === userMessage.id
+            ? { ...msg, status: 'error' as const }
+            : msg
+        )
+      );
+
+      // Mostrar mensaje de error
+      const errorMessage: ExtendedChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `Error: ${error instanceof Error ? error.message : 'Error desconocido al conectar con la API'}. Por favor, verifica tu configuración o intenta de nuevo.`,
+        type: 'system',
+        createdAt: new Date(),
+        roomId: 'assistant-chat',
+        status: 'sent',
+        likes: 0,
+        dislikes: 0
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+
+      // Mostrar notificación de error
+      toast.error('Error al conectar con la API', {
+        description: error instanceof Error ? error.message : 'Verifica tu configuración'
+      });
+
+    } finally {
       setIsLoading(false);
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleSendMessage = handleSend;
@@ -329,13 +432,32 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
                 </CardDescription>
               </div>
             </div>
-            <Badge variant="outline" className="border-green-500/30 text-green-400">
-              En línea
+            <Badge
+              variant="outline"
+              className={cn(
+                "border-green-500/30 text-green-400",
+                !modelConfig.apiUrl.trim() && "border-yellow-500/30 text-yellow-400"
+              )}
+            >
+              {modelConfig.apiUrl.trim() ? 'Configurado' : 'Sin configurar'}
             </Badge>
           </div>
         </CardHeader>
 
         <CardContent className="pb-4">
+          {/* Mensaje de ayuda si no está configurado */}
+          {!modelConfig.apiUrl.trim() && (
+            <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <div className="flex items-center gap-2 text-yellow-400 text-sm">
+                <Sparkles className="h-4 w-4" />
+                <span>El asistente necesita configuración para funcionar con IA real</span>
+              </div>
+              <p className="text-xs text-yellow-300 mt-1">
+                Configura tu API key y endpoint en "Configurar Modelo" para comenzar a chatear con IA real.
+              </p>
+            </div>
+          )}
+
           {/* Quick Actions */}
           <div className="mb-4">
             <p className="text-sm text-gray-400 mb-2">Acciones rápidas:</p>
@@ -527,9 +649,15 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
 
             <div className="flex items-center justify-between text-xs text-gray-500">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span>En línea</span>
+                <div className={cn(
+                  "flex items-center gap-1",
+                  modelConfig.apiUrl.trim() ? "text-green-400" : "text-yellow-400"
+                )}>
+                  <div className={cn(
+                    "h-2 w-2 rounded-full",
+                    modelConfig.apiUrl.trim() ? "bg-green-500" : "bg-yellow-500"
+                  )}></div>
+                  <span>{modelConfig.apiUrl.trim() ? 'Configurado' : 'Sin configurar'}</span>
                 </div>
                 <span>{messages.length} mensajes</span>
                 <Button
@@ -538,7 +666,7 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
                   className="text-xs text-gray-400 hover:text-gray-300"
                   onClick={() => setIsConfigModalOpen(true)}
                 >
-                  Configurar Modelo
+                  {modelConfig.apiUrl.trim() ? 'Actualizar Config' : 'Configurar Modelo'}
                 </Button>
               </div>
               <div className="flex items-center gap-1">
@@ -571,6 +699,47 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
             <p className="text-xs text-gray-500 mt-1">
               URL del endpoint de la API (OpenAI, Anthropic, Ollama, etc.)
             </p>
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-gray-400">Ejemplos rápidos:</p>
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-6 px-2 bg-gray-800 hover:bg-gray-700"
+                  onClick={() => setModelConfig(prev => ({
+                    ...prev,
+                    apiUrl: 'https://api.openai.com/v1/chat/completions',
+                    modelName: 'gpt-3.5-turbo'
+                  }))}
+                >
+                  OpenAI
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-6 px-2 bg-gray-800 hover:bg-gray-700"
+                  onClick={() => setModelConfig(prev => ({
+                    ...prev,
+                    apiUrl: 'https://api.anthropic.com/v1/messages',
+                    modelName: 'claude-3-sonnet-20240229'
+                  }))}
+                >
+                  Anthropic
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-6 px-2 bg-gray-800 hover:bg-gray-700"
+                  onClick={() => setModelConfig(prev => ({
+                    ...prev,
+                    apiUrl: 'http://localhost:11434/v1/chat/completions',
+                    modelName: 'llama2'
+                  }))}
+                >
+                  Ollama
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -636,13 +805,62 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
               Cancelar
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
+                // Validación básica
                 if (!modelConfig.apiUrl.trim()) {
-                  alert('Por favor, ingresa la URL de la API');
+                  toast.error('URL de la API requerida', {
+                    description: 'Por favor, ingresa la URL del endpoint de la API'
+                  });
                   return;
                 }
+
+                // Validar formato de URL
+                try {
+                  new URL(modelConfig.apiUrl);
+                } catch {
+                  toast.error('URL inválida', {
+                    description: 'Por favor, ingresa una URL válida (ej: https://api.openai.com/v1/chat/completions)'
+                  });
+                  return;
+                }
+
+                // Guardar configuración
+                saveConfig(modelConfig);
+
+                // Opcional: Probar conexión
+                try {
+                  const testResponse = await fetch(modelConfig.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(modelConfig.apiKey.trim() && {
+                        'Authorization': `Bearer ${modelConfig.apiKey.trim()}`
+                      })
+                    },
+                    body: JSON.stringify({
+                      model: modelConfig.modelName,
+                      messages: [{ role: 'user', content: 'Test' }],
+                      max_tokens: 1
+                    })
+                  });
+
+                  if (testResponse.ok) {
+                    toast.success('Configuración guardada y conexión verificada', {
+                      description: 'El asistente está listo para usarse'
+                    });
+                  } else {
+                    const errorData = await testResponse.json().catch(() => ({}));
+                    toast.warning('Configuración guardada con advertencias', {
+                      description: `Error de conexión: ${errorData.error?.message || testResponse.statusText}`
+                    });
+                  }
+                } catch (error) {
+                  toast.warning('Configuración guardada', {
+                    description: 'No se pudo verificar la conexión, pero la configuración se guardó'
+                  });
+                }
+
                 setIsConfigModalOpen(false);
-                toast.success('Configuración guardada correctamente');
               }}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
