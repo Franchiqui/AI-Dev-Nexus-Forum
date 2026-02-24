@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import React, { memo, useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -36,7 +34,7 @@ const Header: React.FC<HeaderProps> = memo(({ user, notificationsCount = 0 }) =>
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState < string[] > ([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const onlineUsers = useOnlineUsersStore((state) => state.count);
@@ -47,7 +45,7 @@ const Header: React.FC<HeaderProps> = memo(({ user, notificationsCount = 0 }) =>
     watch,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<SearchFormData>({
+  } = useForm < SearchFormData > ({
     resolver: zodResolver(searchSchema),
     defaultValues: { query: '' },
   });
@@ -169,7 +167,7 @@ const Header: React.FC<HeaderProps> = memo(({ user, notificationsCount = 0 }) =>
               </Link>
             </div>
 
-            <nav className="hidden lg:ml-10 lg:flex lg:space-x-1">
+            <nav className="ml-10 flex gap-8">
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname.startsWith(item.href);
@@ -178,16 +176,16 @@ const Header: React.FC<HeaderProps> = memo(({ user, notificationsCount = 0 }) =>
                     key={item.name}
                     href={item.href}
                     className={cn(
-                      'group relative px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'group relative p-3 rounded-lg text-sm font-medium transition-colors border flex-shrink-0',
                       isActive
-                        ? 'text-white bg-gray-800'
-                        : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
+                        ? 'text-white bg-gray-800 border-gray-600'
+                        : 'text-gray-300 hover:text-white hover:bg-gray-800/50 border-gray-700'
                     )}
                     aria-current={isActive ? 'page' : undefined}
+                    title={item.name}
                   >
                     <div className="flex items-center">
-                      <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
-                      {item.name}
+                      <Icon className="h-5 w-5" aria-hidden="true" />
                     </div>
                     {isActive && (
                       <motion.div
