@@ -1,5 +1,5 @@
 export const APP_NAME = 'AI-Dev Nexus Forum';
-export const APP_SLOGAN = 'Conectando mentes, construyendo el futuro de la IA';
+export const APP_SLOGAN = '';
 export const APP_DESCRIPTION = 'Foro de Desarrolladores de IA - Comunidad colaborativa para el desarrollo de inteligencia artificial';
 
 // API endpoints

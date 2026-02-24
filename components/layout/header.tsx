@@ -165,7 +165,6 @@ const Header: React.FC<HeaderProps> = memo(({ user, notificationsCount = 0 }) =>
                   </div>
                 </div>
                 <span className="ml-3 text-sm text-gray-400 hidden sm:block">
-                  Conectando mentes, construyendo el futuro de la IA
                 </span>
               </Link>
             </div>
