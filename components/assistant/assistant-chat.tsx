@@ -15,7 +15,7 @@ import { Slider } from '@radix-ui/react-slider';
 import { toast } from 'sonner';
 import { Modal } from '../ui/modal';
 
-type MessageType = 'text' | 'system';
+type MessageType = 'text' | 'system' | 'assistant';
 type MessageStatus = 'sending' | 'sent' | 'error';
 
 interface ExtendedChatMessage {
@@ -90,7 +90,7 @@ const INITIAL_MESSAGES: ExtendedChatMessage[] = [
   {
     id: '3',
     content: 'Para implementar un transformer en PyTorch, necesitas:\n\n1. **Multi-Head Attention**: Implementa el mecanismo de atención con múltiples cabezas.\n2. **Positional Encoding**: Añade información posicional a los embeddings.\n3. **Feed Forward Networks**: Capas lineales con activación ReLU.\n4. **Encoder/Decoder Blocks**: Combina atención y FFN con residual connections.\n\n¿Te gustaría que profundice en algún componente específico?',
-    type: 'text',
+    type: 'assistant',
     createdAt: new Date(Date.now() - 1200000),
     roomId: 'assistant-chat',
     status: 'sent',
@@ -192,9 +192,9 @@ export default function AssistantChat() {
           content: 'Eres un asistente especializado en desarrollo de IA y machine learning. Ayudas a los desarrolladores con explicaciones de conceptos, revisión de código, optimización de modelos, debugging y mejores prácticas. Responde en español de manera clara y profesional.'
         },
         ...messages
-          .filter(msg => msg.type === 'text' || msg.type === 'system')
+          .filter(msg => msg.type === 'text' || msg.type === 'assistant' || msg.type === 'system')
           .map(msg => ({
-            role: msg.type === 'text' ? 'user' : 'assistant',
+            role: msg.type === 'text' ? 'user' : msg.type === 'assistant' ? 'assistant' : 'system',
             content: msg.content
           })),
         {
@@ -232,7 +232,7 @@ export default function AssistantChat() {
       const assistantMessage: ExtendedChatMessage = {
         id: (Date.now() + 1).toString(),
         content: assistantContent,
-        type: 'text',
+        type: 'assistant',
         createdAt: new Date(),
         roomId: 'assistant-chat',
         status: 'sent',
@@ -487,23 +487,29 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
                 <div
                   key={message.id}
                   className={cn(
-                    'flex gap-3',
-                    message.type === 'text' ? 'flex-row-reverse' : 'flex-row'
+                    'flex gap-2',
+                    message.type === 'text' ? 'flex-col-reverse items-end' : 'flex-col items-start'
                   )}
                 >
                   <Avatar className={cn(
                     'h-8 w-8',
                     message.type === 'text'
                       ? 'border border-blue-500/20'
-                      : 'border border-purple-500/20'
+                      : message.type === 'assistant'
+                        ? 'border border-green-500/20'
+                        : 'border border-gray-500/20'
                   )}>
                     <AvatarFallback className={cn(
                       message.type === 'text'
                         ? 'bg-blue-900/30 text-blue-400'
-                        : 'bg-purple-900/30 text-purple-400'
+                        : message.type === 'assistant'
+                          ? 'bg-green-900/30 text-green-400'
+                          : 'bg-gray-900/30 text-gray-400'
                     )}>
                       {message.type === 'text' ? (
                         <User className="h-4 w-4" />
+                      ) : message.type === 'assistant' ? (
+                        <Bot className="h-4 w-4" />
                       ) : (
                         <Bot className="h-4 w-4" />
                       )}
@@ -511,18 +517,20 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
                   </Avatar>
 
                   <div className={cn(
-                    'flex-1 space-y-1',
+                    'flex flex-col gap-1 max-w-[85%]',
                     message.type === 'text' ? 'items-end' : 'items-start'
                   )}>
                     <div className={cn(
-                      'rounded-2xl px-4 py-2 max-w-[85%]',
+                      'rounded-2xl px-4 py-2',
                       message.type === 'text'
                         ? 'bg-blue-500/20 text-blue-100 border border-blue-500/30'
-                        : 'bg-gray-800/70 text-gray-100 border border-gray-700'
+                        : message.type === 'assistant'
+                          ? 'bg-green-900/20 text-gray-100 border border-green-500/30'
+                          : 'bg-gray-700/50 text-gray-300 border border-gray-600'
                     )}>
                       <p className="whitespace-pre-wrap">{message.content}</p>
 
-                      {message.type !== 'text' && (
+                      {(message.type === 'assistant' || message.type === 'system') && (
                         <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-700/50">
                           <Button
                             variant="ghost"
@@ -563,14 +571,9 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
               ))}
 
               {isLoading && (
-                <div className="flex gap-3">
-                  <Avatar className="h-8 w-8 border border-purple-500/20">
-                    <AvatarFallback className="bg-purple-900/30 text-purple-400">
-                      <Bot className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <div className="rounded-2xl px-4 py-2 max-w-[85%] bg-gray-800/70 text-gray-100 border border-gray-700">
+                <div className="flex gap-2 items-start">
+                  <div className="flex flex-col gap-1 max-w-[85%]">
+                    <div className="rounded-2xl px-4 py-2 bg-gray-800/70 text-gray-100 border border-gray-700">
                       <div className="flex items-center gap-2">
                         <div className="flex gap-1">
                           <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></div>
@@ -581,6 +584,11 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
                       </div>
                     </div>
                   </div>
+                  <Avatar className="h-8 w-8 border border-green-500/20">
+                    <AvatarFallback className="bg-green-900/30 text-green-400">
+                      <Bot className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
               )}
             </div>
@@ -872,4 +880,5 @@ Como asistente especializado en desarrollo de IA, puedo ayudarte con:
     </>
   );
 }
+
 

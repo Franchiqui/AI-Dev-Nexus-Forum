@@ -111,6 +111,7 @@ const Header: React.FC<HeaderProps> = memo(({ user, notificationsCount = 0 }) =>
       { name: 'Model Zoo', href: '/model-zoo', icon: ComputerDesktopIcon },
       { name: 'Challenges', href: '/challenges', icon: FireIcon },
       { name: 'Trends', href: '/trends', icon: FireIcon },
+      { name: 'Asistente IA', href: '/asistente-ia', icon: Bot },
     ],
     []
   );

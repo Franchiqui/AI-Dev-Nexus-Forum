@@ -1,4 +1,4 @@
-import { AssistantChat } from '@/components/assistant/assistant-chat';
+import AssistantChat from '@/components/assistant/assistant-chat';
 
 export default function AsistenteIAPage() {
   return (
