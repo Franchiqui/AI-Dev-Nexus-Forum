@@ -1,7 +1,11 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+
+// Función cn alternativa en caso de que '@/lib/utils' no esté disponible
+const cn = (...classes: (string | undefined | boolean)[]) => {
+  return classes.filter(Boolean).join(' ');
+};
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -41,10 +45,23 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
+    
+    // Si usas Slot, necesitamos manejar el ref de manera diferente
+    // Usamos un tipo específico para el ref cuando asChild es true
+    const slotRef = React.useRef<HTMLButtonElement>(null);
+    
+    // Combinamos el ref proporcionado con nuestro slotRef cuando asChild es true
+    const combinedRef = React.useMemo(() => {
+      if (asChild) {
+        return slotRef;
+      }
+      return ref;
+    }, [asChild, ref]);
+    
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
+        ref={combinedRef}
         {...props}
       />
     );
@@ -53,3 +70,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button";
 
 export { Button, buttonVariants };
+export default Button;

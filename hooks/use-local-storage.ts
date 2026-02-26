@@ -18,28 +18,20 @@ export interface UseLocalStorageReturn<T> {
 }
 
 const defaultSerializer = <T>(value: T): string => {
-  try {
-    return JSON.stringify(value);
-  } catch (error) {
-    throw new Error(`Failed to serialize value: ${error}`);
-  }
+  return JSON.stringify(value);
 };
 
 const defaultDeserializer = <T>(value: string): T => {
-  try {
-    return JSON.parse(value) as T;
-  } catch (error) {
-    throw new Error(`Failed to deserialize value: ${error}`);
-  }
+  return JSON.parse(value);
 };
 
 const isBrowser = typeof window !== 'undefined';
 
-const useLocalStorage = <T>(
+export function useLocalStorage<T>(
   key: string,
-  initialValue?: T,
+  initialValue: T,
   options: UseLocalStorageOptions<T> = {}
-): UseLocalStorageReturn<T> => {
+): UseLocalStorageReturn<T> {
   const {
     serializer = defaultSerializer,
     deserializer = defaultDeserializer,
@@ -47,14 +39,14 @@ const useLocalStorage = <T>(
   } = options;
 
   const [storedValue, setStoredValue] = useState<LocalStorageValue<T>>(() => {
-    if (!isBrowser) return initialValue ?? null;
+    if (!isBrowser) return initialValue;
 
     try {
       const item = window.localStorage.getItem(key);
-      return item ? deserializer(item) : (initialValue ?? null);
+      return item ? deserializer(item) : initialValue;
     } catch (error) {
       onError?.(error as Error);
-      return initialValue ?? null;
+      return initialValue;
     }
   });
 
@@ -62,61 +54,47 @@ const useLocalStorage = <T>(
   const initialValueRef = useRef(initialValue);
   const keyRef = useRef(key);
 
-  useEffect(() => {
-    keyRef.current = key;
-  }, [key]);
-
   const setValue = useCallback(
     (newValue: T | ((prev: LocalStorageValue<T>) => T)) => {
       if (!isBrowser) return;
 
       try {
         const valueToStore =
-          newValue instanceof Function
-            ? newValue(storedValue)
-            : newValue;
+          newValue instanceof Function ? newValue(storedValue) : newValue;
 
         setStoredValue(valueToStore);
+        window.localStorage.setItem(key, serializer(valueToStore));
         setIsPersistent(true);
-
-        if (valueToStore === null) {
-          window.localStorage.removeItem(keyRef.current);
-        } else {
-          window.localStorage.setItem(
-            keyRef.current,
-            serializer(valueToStore)
-          );
-        }
       } catch (error) {
-        setIsPersistent(false);
         onError?.(error as Error);
+        setIsPersistent(false);
       }
     },
-    [storedValue, serializer, onError]
+    [key, storedValue, serializer, onError]
   );
 
   const removeValue = useCallback(() => {
     if (!isBrowser) return;
 
     try {
-      setStoredValue(null);
-      window.localStorage.removeItem(keyRef.current);
+      window.localStorage.removeItem(key);
+      setStoredValue(initialValueRef.current);
       setIsPersistent(true);
     } catch (error) {
-      setIsPersistent(false);
       onError?.(error as Error);
+      setIsPersistent(false);
     }
-  }, [onError]);
+  }, [key, onError]);
 
   useEffect(() => {
     if (!isBrowser) return;
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === keyRef.current && event.storageArea === window.localStorage) {
+      if (event.key === keyRef.current && event.storageArea === localStorage) {
         try {
           const newValue = event.newValue
             ? deserializer(event.newValue)
-            : initialValueRef.current ?? null;
+            : initialValueRef.current;
           setStoredValue(newValue);
         } catch (error) {
           onError?.(error as Error);
@@ -124,30 +102,34 @@ const useLocalStorage = <T>(
       }
     };
 
-    const testPersistence = () => {
+    const checkPersistency = () => {
       try {
         const testKey = `__persistence_test_${Date.now()}__`;
         window.localStorage.setItem(testKey, 'test');
         window.localStorage.removeItem(testKey);
         setIsPersistent(true);
-      } catch (error) {
+      } catch {
         setIsPersistent(false);
       }
     };
 
-    testPersistence();
-
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('focus', testPersistence);
+    checkPersistency();
+
+    const intervalId = setInterval(checkPersistency, 10000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', testPersistence);
+      clearInterval(intervalId);
     };
   }, [deserializer, onError]);
 
   useEffect(() => {
-    if (!isBrowser || !key) return;
+    keyRef.current = key;
+  }, [key]);
+
+  useEffect(() => {
+    if (!isBrowser) return;
 
     try {
       const item = window.localStorage.getItem(key);
@@ -165,17 +147,20 @@ const useLocalStorage = <T>(
     removeValue,
     isPersistent,
   };
-};
+}
 
-export default useLocalStorage;
-
-export const useLocalStorageArray = <T>(
+export function useLocalStorageArray<T>(
   key: string,
-  initialArray: T[] = []
-) => {
+  initialValue: T[] = []
+): UseLocalStorageReturn<T[]> & {
+  addItem: (item: T) => void;
+  removeItem: (index: number) => void;
+  updateItem: (index: number, item: T) => void;
+  clearAll: () => void;
+} {
   const { value, setValue, removeValue, isPersistent } = useLocalStorage<T[]>(
     key,
-    initialArray
+    initialValue
   );
 
   const addItem = useCallback(
@@ -188,8 +173,9 @@ export const useLocalStorageArray = <T>(
   const removeItem = useCallback(
     (index: number) => {
       setValue((prev) => {
-        if (!prev) return [];
-        return prev.filter((_, i) => i !== index);
+        const array = prev || [];
+        if (index < 0 || index >= array.length) return array;
+        return [...array.slice(0, index), ...array.slice(index + 1)];
       });
     },
     [setValue]
@@ -198,65 +184,69 @@ export const useLocalStorageArray = <T>(
   const updateItem = useCallback(
     (index: number, item: T) => {
       setValue((prev) => {
-        if (!prev) return [];
-        const newArray = [...prev];
-        newArray[index] = item;
-        return newArray;
+        const array = prev || [];
+        if (index < 0 || index >= array.length) return array;
+        return [...array.slice(0, index), item, ...array.slice(index + 1)];
       });
     },
     [setValue]
   );
 
-  const clearArray = useCallback(() => {
+  const clearAll = useCallback(() => {
     setValue([]);
   }, [setValue]);
 
   return {
-    items: value || [],
+    value,
+    setValue,
+    removeValue,
+    isPersistent,
     addItem,
     removeItem,
     updateItem,
-    clearArray,
-    removeAll: removeValue,
-    isPersistent,
+    clearAll,
   };
-};
+}
 
-export const useLocalStorageObject = <T extends Record<string, unknown>>(
+export function useLocalStorageObject<T extends Record<string, any>>(
   key: string,
-  initialObject: Partial<T> = {}
-) => {
+  initialValue: T
+): UseLocalStorageReturn<T> & {
+  updateField: <K extends keyof T>(field: K, value: T[K]) => void;
+  removeField: (field: keyof T) => void;
+} {
   const { value, setValue, removeValue, isPersistent } = useLocalStorage<T>(
     key,
-    initialObject as T
+    initialValue
   );
 
   const updateField = useCallback(
     <K extends keyof T>(field: K, fieldValue: T[K]) => {
-      setValue((prev) => {
-        const newObject = { ...(prev || {}), [field]: fieldValue } as T;
-        return newObject;
-      });
+      setValue((prev) => ({
+        ...(prev || initialValue),
+        [field]: fieldValue,
+      }));
     },
-    [setValue]
+    [setValue, initialValue]
   );
 
   const removeField = useCallback(
-    <K extends keyof T>(field: K) => {
+    (field: keyof T) => {
       setValue((prev) => {
-        if (!prev) return {} as T;
+        if (!prev) return initialValue;
         const { [field]: _, ...rest } = prev;
         return rest as T;
       });
     },
-    [setValue]
+    [setValue, initialValue]
   );
 
   return {
-    object: value || ({} as T),
+    value,
+    setValue,
+    removeValue,
+    isPersistent,
     updateField,
     removeField,
-    removeAll: removeValue,
-    isPersistent,
   };
-};
+}

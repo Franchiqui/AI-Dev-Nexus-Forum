@@ -1,4 +1,4 @@
-# AI-Dev Nexus Forum
+# Nexus Media Studio
 
 A next-js application generated with ZEUS.
 

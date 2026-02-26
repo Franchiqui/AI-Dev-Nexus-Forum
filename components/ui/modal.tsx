@@ -4,12 +4,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertCircle, CheckCircle, Info, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
-export type ModalVariant = 'default' | 'danger' | 'success' | 'info';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -17,43 +14,16 @@ export interface ModalProps {
   title?: string;
   description?: string;
   children: React.ReactNode;
-  size?: ModalSize;
-  variant?: ModalVariant;
-  showCloseButton?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   closeOnOverlayClick?: boolean;
-  closeOnEscape?: boolean;
-  preventScroll?: boolean;
+  closeOnEsc?: boolean;
+  showCloseButton?: boolean;
   initialFocusRef?: React.RefObject<HTMLElement>;
   className?: string;
   overlayClassName?: string;
-  contentClassName?: string;
-  headerClassName?: string;
-  bodyClassName?: string;
-  footer?: React.ReactNode;
-  isLoading?: boolean;
+  containerClassName?: string;
+  resizable?: boolean;
 }
-
-const sizeClasses: Record<ModalSize, string> = {
-  sm: 'max-w-md',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
-  full: 'max-w-[95vw] max-h-[90vh]',
-};
-
-const variantIcons: Record<ModalVariant, React.ReactNode> = {
-  default: null,
-  danger: <AlertCircle className="h-6 w-6 text-red-500" />,
-  success: <CheckCircle className="h-6 w-6 text-green-500" />,
-  info: <Info className="h-6 w-6 text-blue-500" />,
-};
-
-const variantBorderColors: Record<ModalVariant, string> = {
-  default: 'border-gray-200 dark:border-gray-700',
-  danger: 'border-red-200 dark:border-red-700',
-  success: 'border-green-200 dark:border-green-700',
-  info: 'border-blue-200 dark:border-blue-700',
-};
 
 const Modal = React.memo(function Modal({
   isOpen,
@@ -62,23 +32,30 @@ const Modal = React.memo(function Modal({
   description,
   children,
   size = 'md',
-  variant = 'default',
-  showCloseButton = true,
   closeOnOverlayClick = true,
-  closeOnEscape = true,
-  preventScroll = true,
+  closeOnEsc = true,
+  showCloseButton = true,
   initialFocusRef,
   className,
   overlayClassName,
-  contentClassName,
-  headerClassName,
-  bodyClassName,
-  footer,
-  isLoading = false,
+  containerClassName,
+  resizable,
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
-  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const lastFocusedElement = useRef<HTMLElement | null>(null);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape' && closeOnEsc) {
+      onClose();
+    }
+  }, [onClose, closeOnEsc]);
+
+  const handleOverlayClick = useCallback((event: React.MouseEvent) => {
+    if (closeOnOverlayClick && event.target === event.currentTarget) {
+      onClose();
+    }
+  }, [closeOnOverlayClick, onClose]);
 
   useEffect(() => {
     setMounted(true);
@@ -87,77 +64,44 @@ const Modal = React.memo(function Modal({
 
   useEffect(() => {
     if (isOpen) {
-      lastFocusedElementRef.current = document.activeElement as HTMLElement;
+      lastFocusedElement.current = document.activeElement as HTMLElement;
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', handleKeyDown);
       
-      if (preventScroll) {
-        document.body.style.overflow = 'hidden';
-      }
-
-      if (initialFocusRef?.current) {
-        setTimeout(() => initialFocusRef.current?.focus(), 100);
-      } else if (modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        const firstFocusable = focusableElements[0] as HTMLElement;
-        if (firstFocusable) {
-          setTimeout(() => firstFocusable.focus(), 100);
+      setTimeout(() => {
+        if (initialFocusRef?.current) {
+          initialFocusRef.current.focus();
+        } else if (modalRef.current) {
+          const focusableElements = modalRef.current.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusableElements.length > 0) {
+            (focusableElements[0] as HTMLElement).focus();
+          }
         }
-      }
+      }, 100);
     } else {
-      if (preventScroll) {
-        document.body.style.overflow = '';
-      }
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleKeyDown);
       
-      if (lastFocusedElementRef.current) {
-        setTimeout(() => lastFocusedElementRef.current?.focus(), 100);
+      if (lastFocusedElement.current) {
+        lastFocusedElement.current.focus();
       }
     }
 
     return () => {
-      if (preventScroll) {
-        document.body.style.overflow = '';
-      }
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, preventScroll, initialFocusRef]);
+  }, [isOpen, handleKeyDown, initialFocusRef]);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (closeOnEscape && event.key === 'Escape' && isOpen) {
-      onClose();
-    }
-    
-    if (event.key === 'Tab' && modalRef.current) {
-      const focusableElements = modalRef.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      
-      if (focusableElements.length === 0) return;
-
-      const firstElement = focusableElements[0] as HTMLElement;
-      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    }
-  }, [closeOnEscape, isOpen, onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, handleKeyDown]);
-
-  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
-    if (closeOnOverlayClick && e.target === e.currentTarget) {
-      onClose();
-    }
-  }, [closeOnOverlayClick, onClose]);
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    full: 'max-w-full mx-4',
+  };
 
   const modalContent = (
     <AnimatePresence>
@@ -169,14 +113,17 @@ const Modal = React.memo(function Modal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              'fixed inset-0 z-50 bg-black/50 backdrop-blur-sm',
+              'fixed inset-0 z-50 flex items-center justify-center p-4',
               overlayClassName
             )}
             onClick={handleOverlayClick}
-            aria-hidden="true"
-          />
-          
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            role="presentation"
+          >
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+              aria-hidden="true"
+            />
+            
             <motion.div
               ref={modalRef}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -184,10 +131,9 @@ const Modal = React.memo(function Modal({
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className={cn(
-                'relative w-full rounded-lg bg-white dark:bg-gray-900 shadow-xl',
+                'relative z-10 w-full rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800',
+                'shadow-2xl border border-gray-700/50',
                 sizeClasses[size],
-                variantBorderColors[variant],
-                'border',
                 className
               )}
               role="dialog"
@@ -195,81 +141,58 @@ const Modal = React.memo(function Modal({
               aria-labelledby={title ? 'modal-title' : undefined}
               aria-describedby={description ? 'modal-description' : undefined}
             >
-              {isLoading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                </div>
-              )}
-
-              {(title || showCloseButton) && (
-                <div className={cn(
-                  'flex items-center justify-between border-b px-6 py-4',
-                  variantBorderColors[variant],
-                  headerClassName
-                )}>
-                  <div className="flex items-center gap-3">
-                    {variantIcons[variant]}
+              <div
+                className={cn(
+                  'flex flex-col max-h-[90vh]',
+                  resizable && 'resize-y overflow-auto',
+                  containerClassName
+                )}
+              >
+                {(title || showCloseButton) && (
+                  <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
                     {title && (
-                      <h3
-                        id="modal-title"
-                        className="text-lg font-semibold text-gray-900 dark:text-white"
+                      <div className="flex-1">
+                        <h2
+                          id="modal-title"
+                          className="text-xl font-semibold text-white"
+                        >
+                          {title}
+                        </h2>
+                        {description && (
+                          <p
+                            id="modal-description"
+                            className="mt-1 text-sm text-gray-400"
+                          >
+                            {description}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {showCloseButton && (
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className={cn(
+                          'ml-4 rounded-full p-2',
+                          'text-gray-400 hover:text-white hover:bg-gray-700/50',
+                          'transition-colors duration-200',
+                          'focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900'
+                        )}
+                        aria-label="Close modal"
                       >
-                        {title}
-                      </h3>
+                        <XMarkIcon className="w-5 h-5" />
+                      </button>
                     )}
                   </div>
-                  
-                  {showCloseButton && (
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-                      aria-label="Close modal"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div className={cn(
-                size === 'full' ? 'overflow-auto' : '',
-                contentClassName
-              )}>
-                {(description && !title) && (
-                  <div className="border-b px-6 py-4">
-                    <p
-                      id="modal-description"
-                      className="text-sm text-gray-600 dark:text-gray-300"
-                    >
-                      {description}
-                    </p>
-                  </div>
                 )}
-
-                <div className={cn('px-6 py-4', bodyClassName)}>
-                  {description && title && (
-                    <p
-                      id="modal-description"
-                      className="mb-4 text-sm text-gray-600 dark:text-gray-300"
-                    >
-                      {description}
-                    </p>
-                  )}
+                
+                <div className="flex-1 overflow-y-auto p-6">
                   {children}
                 </div>
-
-                {footer && (
-                  <div className={cn(
-                    'border-t px-6 py-4',
-                    variantBorderColors[variant]
-                  )}>
-                    {footer}
-                  </div>
-                )}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         </>
       )}
     </AnimatePresence>
@@ -283,3 +206,67 @@ const Modal = React.memo(function Modal({
 Modal.displayName = 'Modal';
 
 export { Modal };
+
+export interface ModalHeaderProps {
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}
+
+export const ModalHeader = React.memo(function ModalHeader({
+  title,
+  description,
+  children,
+}: ModalHeaderProps) {
+  return (
+    <div className="mb-6">
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+      {description && (
+        <p className="mt-1 text-sm text-gray-400">{description}</p>
+      )}
+      {children}
+    </div>
+  );
+});
+
+ModalHeader.displayName = 'ModalHeader';
+
+export interface ModalFooterProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const ModalFooter = React.memo(function ModalFooter({
+  children,
+  className,
+}: ModalFooterProps) {
+  return (
+    <div className={cn(
+      'mt-8 pt-6 border-t border-gray-700/50',
+      'flex items-center justify-end space-x-3',
+      className
+    )}>
+      {children}
+    </div>
+  );
+});
+
+ModalFooter.displayName = 'ModalFooter';
+
+export interface ModalBodyProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const ModalBody = React.memo(function ModalBody({
+  children,
+  className,
+}: ModalBodyProps) {
+  return (
+    <div className={cn('text-gray-300', className)}>
+      {children}
+    </div>
+  );
+});
+
+ModalBody.displayName = 'ModalBody';

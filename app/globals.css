@@ -85,4 +85,9 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .resizable {
+    resize: both;
+    overflow: auto;
+  }
 }

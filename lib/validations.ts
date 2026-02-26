@@ -1,335 +1,302 @@
 import { z } from 'zod';
+import { format } from 'date-fns';
 
-// ==================== USER VALIDATIONS ====================
-export const userProfileSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(30, 'Username must be at most 30 characters')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores and hyphens'),
-  email: z.string().email('Invalid email address'),
-  bio: z.string().max(500, 'Bio must be at most 500 characters').optional(),
-  skills: z.array(z.string()).max(20, 'Maximum 20 skills allowed').optional(),
-  githubUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
-  websiteUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
-  avatar: z.instanceof(File).optional(),
+// ==================== TIPOS BASE ====================
+export type MediaType = 'image' | 'video' | 'audio' | 'document' | 'other';
+export type ExportQuality = 'web' | 'mobile' | 'high';
+export type EffectCategory = 'vintage' | 'modern' | 'cinematic' | 'energetic';
+
+export interface MediaFile {
+  id: string;
+  name: string;
+  type: MediaType;
+  size: number;
+  url: string;
+  thumbnailUrl?: string;
+  uploadedAt: Date;
+  metadata?: MediaMetadata;
+  tags: string[];
+  projectId?: string;
+}
+
+export interface MediaMetadata {
+  width?: number;
+  height?: number;
+  duration?: number;
+  format?: string;
+  bitrate?: number;
+  sampleRate?: number;
+  artist?: string;
+  album?: string;
+  title?: string;
+  cameraModel?: string;
+  exposure?: string;
+  iso?: number;
+  aperture?: string;
+  focalLength?: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  coverUrl?: string;
+  mediaIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  isPublic: boolean;
+  shareLink?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  storageUsed: number;
+  storageLimit: number;
+  createdAt: Date;
+}
+
+// ==================== ESQUEMAS DE VALIDACIÓN ====================
+export const mediaFileSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(255),
+  type: z.enum(['image', 'video', 'audio', 'document', 'other']),
+  size: z.number().positive().max(10 * 1024 * 1024 * 1024), // 10GB max
+  url: z.string().url(),
+  thumbnailUrl: z.string().url().optional(),
+  uploadedAt: z.date(),
+  metadata: z.object({
+    width: z.number().positive().optional(),
+    height: z.number().positive().optional(),
+    duration: z.number().positive().optional(),
+    format: z.string().optional(),
+    bitrate: z.number().positive().optional(),
+    sampleRate: z.number().positive().optional(),
+    artist: z.string().optional(),
+    album: z.string().optional(),
+    title: z.string().optional(),
+    cameraModel: z.string().optional(),
+    exposure: z.string().optional(),
+    iso: z.number().positive().optional(),
+    aperture: z.string().optional(),
+    focalLength: z.string().optional(),
+  }).optional(),
+  tags: z.array(z.string().max(50)).max(20),
+  projectId: z.string().uuid().optional(),
 });
 
-export const userPreferencesSchema = z.object({
-  theme: z.enum(['dark', 'light', 'high-contrast']),
-  notifications: z.object({
-    email: z.boolean(),
-    push: z.boolean(),
-    mentions: z.boolean(),
-    threadReplies: z.boolean(),
-    challengeUpdates: z.boolean(),
-  }),
-  interests: z.array(z.enum(['ml', 'nlp', 'cv', 'rl', 'robotics', 'ethics', 'tools'])),
-  codeLanguage: z.enum(['python', 'javascript', 'typescript', 'rust']),
-});
-
-export type UserProfile = z.infer<typeof userProfileSchema>;
-export type UserPreferences = z.infer<typeof userPreferencesSchema>;
-
-// ==================== FORUM VALIDATIONS ====================
-export const threadSchema = z.object({
-  title: z
-    .string()
-    .min(10, 'Title must be at least 10 characters')
-    .max(200, 'Title must be at most 200 characters'),
-  content: z
-    .string()
-    .min(50, 'Content must be at least 50 characters')
-    .max(10000, 'Content must be at most 10000 characters'),
-  tags: z
-    .array(z.string())
-    .min(1, 'At least one tag is required')
-    .max(5, 'Maximum 5 tags allowed'),
-  category: z.enum(['discussion', 'question', 'showcase', 'tutorial', 'announcement']),
-  isTechnical: z.boolean(),
-  codeSnippet: z.string().max(2000).optional(),
-});
-
-export const replySchema = z.object({
-  content: z
-    .string()
-    .min(10, 'Reply must be at least 10 characters')
-    .max(5000, 'Reply must be at most 5000 characters'),
-  threadId: z.string().uuid('Invalid thread ID'),
-  parentReplyId: z.string().uuid('Invalid reply ID').optional(),
-  codeSnippet: z.string().max(2000).optional(),
-  references: z.array(z.string().url('Invalid URL')).max(5).optional(),
-});
-
-export const voteSchema = z.object({
-  targetId: z.string().uuid('Invalid target ID'),
-  targetType: z.enum(['thread', 'reply', 'model', 'challenge']),
-  value: z.number().int().min(-1).max(1),
-});
-
-export type Thread = z.infer<typeof threadSchema>;
-export type Reply = z.infer<typeof replySchema>;
-export type Vote = z.infer<typeof voteSchema>;
-
-// ==================== AI SANDBOX VALIDATIONS ====================
-export const codeSnippetSchema = z.object({
-  title: z.string().min(5).max(100),
-  description: z.string().max(500).optional(),
-  code: z.string().min(10).max(10000),
-  language: z.enum(['python', 'javascript', 'typescript']),
-  framework: z.enum(['tensorflow', 'pytorch', 'scikit-learn', 'transformers']).optional(),
-  dependencies: z.array(z.string()).max(20).optional(),
+export const projectSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  description: z.string().max(500),
+  coverUrl: z.string().url().optional(),
+  mediaIds: z.array(z.string().uuid()),
+  createdAt: z.date(),
+  updatedAt: z.date(),
   isPublic: z.boolean(),
+  shareLink: z.string().url().optional(),
 });
 
-export const executionRequestSchema = z.object({
-  snippetId: z.string().uuid('Invalid snippet ID'),
-  inputData: z.string().max(5000),
-  parameters: z.record(z.any()).optional(),
+export const userProfileSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(2).max(50),
+  email: z.string().email(),
+  avatarUrl: z.string().url().optional(),
+  storageUsed: z.number().min(0),
+  storageLimit: z.number().positive(),
+  createdAt: z.date(),
 });
 
-export type CodeSnippet = z.infer<typeof codeSnippetSchema>;
-export type ExecutionRequest = z.infer<typeof executionRequestSchema>;
-
-// ==================== MODEL ZOO VALIDATIONS ====================
-export const aiModelSchema = z.object({
-  name: z.string().min(5).max(100),
-  description: z.string().min(50).max(1000),
-  category: z.enum(['classification', 'regression', 'generation', 'detection', 'translation']),
-  framework: z.enum(['tensorflow', 'pytorch', 'jax', 'onnx']),
-  architecture: z.string().min(3).max(100),
-  inputFormat: z.string().min(3).max(100),
-  outputFormat: z.string().min(3).max(100),
-  accuracy: z.number().min(0).max(100).optional(),
-  f1Score: z.number().min(0).max(1).optional(),
-  inferenceTime: z.number().positive().optional(),
-  modelFile: z.instanceof(File),
-  sampleInput: z.string().max(5000),
-  sampleOutput: z.string().max(5000),
-  license: z.enum(['mit', 'apache-2.0', 'gpl-3.0', 'cc-by-4.0']),
+export const exportSettingsSchema = z.object({
+  format: z.enum(['jpg', 'png', 'webp', 'mp4', 'webm', 'mp3', 'wav']),
+  quality: z.enum(['web', 'mobile', 'high']),
+  resolution: z.object({
+    width: z.number().positive(),
+    height: z.number().positive(),
+  }).optional(),
+  bitrate: z.number().positive().optional(),
 });
 
-export type AIModel = z.infer<typeof aiModelSchema>;
-
-// ==================== CHALLENGES VALIDATIONS ====================
-export const challengeSchema = z.object({
-  title: z.string().min(10).max(150),
-  description: z.string().min(100).max(5000),
-  difficulty: z.enum(['beginner', 'intermediate', 'advanced', 'expert']),
-  category: z.enum(['ml', 'nlp', 'cv', 'rl', 'data-science']),
-  datasetUrl: z.string().url('Invalid dataset URL').optional(),
-  evaluationMetric: z.string().min(3).max(100),
-  submissionDeadline: z.date().min(new Date()),
-  maxTeamSize: z.number().int().min(1).max(10),
+export const effectSettingsSchema = z.object({
+  category: z.enum(['vintage', 'modern', 'cinematic', 'energetic']),
+  intensity: z.number().min(0).max(100),
+  brightness: z.number().min(-100).max(100).optional(),
+  contrast: z.number().min(-100).max(100).optional(),
+  saturation: z.number().min(-100).max(100).optional(),
 });
 
-export const challengeSubmissionSchema = z.object({
-  challengeId: z.string().uuid('Invalid challenge ID'),
-  solutionUrl: z.string().url('Invalid solution URL'),
-  codeUrl: z.string().url('Invalid code URL'),
-  description: z.string().min(100).max(2000),
-  metrics: z.record(z.number()),
+export const imageEditSchema = z.object({
+  brightness: z.number().min(-100).max(100).default(0),
+  contrast: z.number().min(-100).max(100).default(0),
+  saturation: z.number().min(-100).max(100).default(0),
+  crop: z.object({
+    x: z.number().min(0),
+    y: z.number().min(0),
+    width: z.number().positive(),
+    height: z.number().positive(),
+  }).optional(),
 });
 
-export type Challenge = z.infer<typeof challengeSchema>;
-export type ChallengeSubmission = z.infer<typeof challengeSubmissionSchema>;
-
-// ==================== CHAT VALIDATIONS ====================
-export const chatMessageSchema = z.object({
-  content: z.string().min(1).max(2000),
-  roomId: z.string().uuid('Invalid room ID'),
-  messageType: z.enum(['text', 'code', 'image', 'file']),
-  fileUrl: z.string().url('Invalid file URL').optional(),
+export const audioEditSchema = z.object({
+  volumeNormalization: z.boolean().default(false),
+  trimStart: z.number().min(0).default(0),
+  trimEnd: z.number().min(0).default(0),
+  effects: z.array(z.enum(['echo', 'fadeIn', 'fadeOut'])).default([]),
 });
 
-export const chatRoomSchema = z.object({
-  name: z.string().min(3).max(50),
-  description: z.string().max(200).optional(),
-  isPrivate: z.boolean(),
-  participantIds: z.array(z.string().uuid('Invalid user ID')).min(2),
+export const videoEditSchema = z.object({
+  trimStart: z.number().min(0).default(0),
+  trimEnd: z.number().min(0).default(0),
+  extractFrames: z.boolean().default(false),
 });
 
-export type ChatMessage = z.infer<typeof chatMessageSchema>;
-export type ChatRoom = z.infer<typeof chatRoomSchema>;
-
-// ==================== FILE VALIDATIONS ====================
-export const fileValidationSchema: {
-  maxSize: {
-    avatar: number;
-    modelFile: number;
-    generalFile: number;
-    codeFile: number;
-    imageFile: number;
-    documentFile: number;
-  };
-  allowedTypes: {
-    avatar: string[];
-    modelFile: string[];
-    codeFile: string[];
-    imageFile: string[];
-    documentFile: string[];
-  };
-  validateFile(file?: File, type?: keyof typeof fileValidationSchema.allowedTypes): string[];
-} = {
-  maxSize: {
-    avatar: 5 * 1024 * 1024, // 5MB
-    modelFile: 100 * 1024 * 1024, // 100MB
-    generalFile: 10 * 1024 * 1024, // 10MB
-    codeFile: 1 * 1024 * 1024, // 1MB
-    imageFile: 10 * 1024 * 1024, // 10MB
-    documentFile: 20 * 1024 * 1024, // 20MB
-  },
+// ==================== VALIDADORES ====================
+export class ValidationService {
   
-  allowedTypes: {
-    avatar: ['image/jpeg', 'image/png', 'image/webp'],
-    modelFile: ['application/octet-stream', '.h5', '.pt', '.pth'],
-    codeFile: ['.py', '.js', '.ts', '.json'],
-    imageFile: ['image/jpeg', 'image/png', 'image/gif'],
-    documentFile: ['application/pdf'],
-  },
-  
-  validateFile(file?: File, type?: keyof typeof fileValidationSchema.allowedTypes): string[] {
-    const errors: string[] = [];
-    
-    if (!file) return errors;
-    
-    if (type && this.maxSize[type]) {
-      if (file.size > this.maxSize[type]) {
-        errors.push(`File size must be less than ${this.maxSize[type] / (1024 * 1024)}MB`);
+  static validateMediaFile(fileData: unknown): MediaFile {
+    try {
+      const validated = mediaFileSchema.parse(fileData);
+      return validated;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid media file data', error.errors);
       }
-      
-      if (this.allowedTypes[type]) {
-        const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-        const isValidType = this.allowedTypes[type].some(allowedType => 
-          file.type === allowedType || allowedType.startsWith('.') && fileExtension === allowedType
-        );
-        
-        if (!isValidType) {
-          errors.push(`Invalid file type. Allowed types: ${this.allowedTypes[type].join(', ')}`);
-        }
-      }
+      throw error;
     }
-    
-    return errors;
-  },
+  }
+
+  static validateProject(projectData: unknown): Project {
+    try {
+      const validated = projectSchema.parse(projectData);
+      return validated;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid project data', error.errors);
+      }
+      throw error;
+    }
+  }
+
+  static validateUserProfile(profileData: unknown): UserProfile {
+    try {
+      const validated = userProfileSchema.parse(profileData);
+      return validated;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid user profile data', error.errors);
+      }
+      throw error;
+    }
+  }
+
+  static validateExportSettings(settingsData: unknown) {
+    try {
+      return exportSettingsSchema.parse(settingsData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid export settings', error.errors);
+      }
+      throw error;
+    }
+  }
+
+  static validateEffectSettings(settingsData: unknown) {
+    try {
+      return effectSettingsSchema.parse(settingsData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid effect settings', error.errors);
+      }
+      throw error;
+    }
+  }
+
+  static validateImageEditSettings(settingsData: unknown) {
+    try {
+      return imageEditSchema.parse(settingsData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid image edit settings', error.errors);
+      }
+      throw error;
+    }
+  }
+
+  static validateAudioEditSettings(settingsData: unknown) {
+    try {
+      return audioEditSchema.parse(settingsData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid audio edit settings', error.errors);
+      }
+      throw error;
+    }
+  }
+
+  static validateVideoEditSettings(settingsData: unknown) {
+    try {
+      return videoEditSchema.parse(settingsData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new ValidationError('Invalid video edit settings', error.errors);
+      }
+      throw error;
+    }
+  }
+
+  
+}
+
+// ==================== UTILIDADES DE VALIDACIÓN ====================
+export class ValidationUtils {
+  
+}
+
+// ==================== ERRORES PERSONALIZADOS ====================
+export class ValidationError extends Error {
+  errors?: z.ZodError['errors'];
+  
+  constructor(message: string, errors?: z.ZodError['errors']) {
+    super(message);
+    this.name = 'ValidationError';
+    this.errors = errors;
+  }
+}
+
+// ==================== CONSTANTES DE VALIDACIÓN ====================
+export const VALIDATION_CONSTANTS = {
+  
 };
 
-// ==================== SEARCH VALIDATIONS ====================
-export const searchQuerySchema = z.object({
-  query: z.string().min(1).max(200),
-  filters: z.object({
-    category: z.array(z.enum(['threads', 'models', 'challenges', 'users'])).optional(),
-    tags: z.array(z.string()).max(10).optional(),
-    dateRange: z.object({
-      from: z.date().optional(),
-      to: z.date().optional(),
-    }).optional(),
-    sortBy: z.enum(['relevance', 'date', 'votes', 'popularity']).optional(),
-    difficultyLevels: challengeSchema.shape.difficulty.array().optional(),
-    frameworksUsed: aiModelSchema.shape.framework.array().optional(),
-    languagesUsed : codeSnippetSchema.shape.language.array().optional()
-}).optional()
-});
-
-export type SearchQuery =z.infer<typeof searchQuerySchema>;
-
-// ==================== NETWORKING VALIDATIONS ====================
-export const collaborationRequestSchema=z.object({
-targetUserId :z.string().uuid('Invalid user ID'),
-message :z.string().min(20).max(500),
-projectType :z.enum(['open-source','research','startup','freelance']),
-skillsNeeded :z.array(z.string()).min(1).max(10),
-estimatedTimeline :z.enum(['short-term','medium-term','long-term'])
-});
-
-export const userMatchingPreferencesSchema=z.object({
-lookingForCollaboration :z.boolean(),
-availableFor :z.array(z.enum(['mentoring','pair-programming','project-work','research'])),
-skillsToOffer :z.array(z.string()).max(15),
-skillsSeeking :z.array(z.string()).max(15),
-timezone :z.string()
-});
-
-export type CollaborationRequest=z.infer<typeof collaborationRequestSchema>;
-export type UserMatchingPreferences=z.infer<typeof userMatchingPreferencesSchema>;
-
-// ==================== EVENT VALIDATIONS ====================
-export const eventSchema=z.object({
-title :z.string().min(10).max(150),
-description :z.string().min(50).max(2000),
-eventType :z.enum(['webinar','workshop','hackathon','meetup','conference']),
-startTime :z.date(),
-endTime :z.date(),
-timezone :z.string(),
-maxAttendees :z.number().int().positive().optional(),
-registrationRequired :z.boolean(),
-meetingLink :z.string().url('Invalid meeting URL').optional()
-});
-
-export const eventRegistrationSchema=z.object({
-eventId :z.string().uuid('Invalid event ID'),
-userId :z.string().uuid('Invalid user ID'),
-questions :z.array(z.object({
-question :z.string(),
-answer :z.string()
-})).max(5).optional()
-});
-
-export type Event=z.infer<typeof eventSchema>;
-export type EventRegistration=z.infer<typeof eventRegistrationSchema>;
-
-// ==================== HELPER FUNCTIONS ====================
-export function sanitizeInput(input:string):string{
-return input
-.replace(/[<>]/g,'')
-.trim()
-.slice(0,10000);
+// ==================== TIPOS DE GUARDIA ====================
+export function isMediaFile(data: unknown): data is MediaFile {
+  try {
+    mediaFileSchema.parse(data);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function validateEmailDomain(email:string):boolean{
-const allowedDomains=['gmail.com','outlook.com','yahoo.com','protonmail.com'];
-const domain=email.split('@')[1];
-return allowedDomains.includes(domain)||domain.includes('.edu')||domain.includes('.org');
+export function isProject(data: unknown): data is Project {
+  try {
+    projectSchema.parse(data);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function validateCodeSnippet(code:string,language:string):string[]{
-const errors:string[]=[];
-if(code.length>10000){
-errors.push('Code exceeds maximum length of10000 characters');
-}
-if(language==='python'){
-if(code.includes('os.system')||code.includes('subprocess.run')){
-errors.push('Potentially unsafe system calls detected');
-}
-}
-if(language==='javascript'||language==='typescript'){
-if(code.includes('eval(')||code.includes('Function(')){
-errors.push('Potentially unsafe eval usage detected');
-}
-}
-return errors;
+export function isUserProfile(data: unknown): data is UserProfile {
+  try {
+    userProfileSchema.parse(data);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-// Export all schemas for easy import
-export const validationSchemas={
-userProfile :userProfileSchema,
-userPreferences :userPreferencesSchema,
-thread :threadSchema,
-reply :replySchema,
-vote :voteSchema,
-codeSnippet :codeSnippetSchema,
-executionRequest :executionRequestSchema,
-aiModel :aiModelSchema,
-challenge :challengeSchema,
-challengeSubmission :challengeSubmissionSchema,
-chatMessage :chatMessageSchema,
-chatRoom :chatRoomSchema,
-searchQuery :searchQuerySchema,
-collaborationRequest :collaborationRequestSchema,
-userMatchingPreferences :userMatchingPreferencesSchema,
-event :eventSchema,
-eventRegistration :eventRegistrationSchema
-};
-
-// Type exports for all schemas
-export type ValidationSchemas=typeof validationSchemas;
+// ==================== EXPORTACIONES POR DEFECTO ====================
+export default ValidationService;

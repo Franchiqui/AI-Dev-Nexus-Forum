@@ -1,190 +1,182 @@
 'use client';
 
-'use client';
-
-import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
 
 const inputVariants = cva(
-  'flex w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 shadow-sm transition-all duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 disabled:cursor-not-allowed disabled:opacity-50',
+  "flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200",
   {
     variants: {
       variant: {
-        default: '',
-        search: 'rounded-full pl-10 pr-4 bg-gray-800 border-gray-600 focus:border-blue-400',
-        chat: 'rounded-full border-blue-500/30 bg-gray-800/50 backdrop-blur-sm',
-        code: 'font-mono border-purple-500/30 bg-gray-900 focus:border-purple-500',
+        default: "border-gray-300 dark:border-gray-700 focus-visible:border-primary",
+        glass: "backdrop-blur-sm bg-white/10 dark:bg-black/10 border-white/20 dark:border-gray-600/30",
+        neon: "border-transparent shadow-[0_0_15px_rgba(147,51,234,0.3)] focus-visible:shadow-[0_0_20px_rgba(147,51,234,0.5)]",
       },
       size: {
-        default: 'h-10',
-        sm: 'h-8 text-xs',
-        lg: 'h-12 text-base',
-        xl: 'h-14 text-lg',
+        default: "h-10",
+        sm: "h-8 text-xs",
+        lg: "h-12 text-base",
+        xl: "h-14 text-lg",
       },
     },
     defaultVariants: {
-      variant: 'default',
-      size: 'default',
+      variant: "default",
+      size: "default",
     },
   }
-);
+)
 
 export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
     VariantProps<typeof inputVariants> {
-  label?: string;
-  error?: string;
-  helperText?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  loading?: boolean;
-  animated?: boolean;
+  leftIcon?: React.ReactNode
+  rightIcon?: React.ReactNode
+  error?: string
+  label?: string
+  helperText?: string
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      className,
-      variant,
-      size,
-      label,
-      error,
-      helperText,
-      leftIcon,
-      rightIcon,
-      loading = false,
-      animated = false,
-      type = 'text',
-      disabled,
-      ...props
-    },
-    ref
-  ) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-    const inputId = React.useId();
+  ({ className, variant, size, leftIcon, rightIcon, error, label, helperText, type = "text", ...props }, ref) => {
+    const [isFocused, setIsFocused] = React.useState(false)
+    const [isDragging, setIsDragging] = React.useState(false)
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(true);
-      props.onFocus?.(e);
-    };
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (type === "file") {
+        setIsDragging(true)
+      }
+    }
 
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(false);
-      props.onBlur?.(e);
-    };
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (type === "file") {
+        setIsDragging(false)
+      }
+    }
 
-    const animationVariants = {
-      focused: {
-        boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)',
-        scale: 1.01,
-      },
-      unfocused: {
-        boxShadow: '0 0 0px rgba(59, 130, 246, 0)',
-        scale: 1,
-      },
-    };
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragging(false)
+      
+      if (type === "file" && fileInputRef.current && e.dataTransfer.files.length > 0) {
+        const dataTransfer = new DataTransfer()
+        Array.from(e.dataTransfer.files).forEach(file => dataTransfer.items.add(file))
+        fileInputRef.current.files = dataTransfer.files
+        fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+    }
 
-    const InputElement = (
-      <div className="relative w-full">
-        {leftIcon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            {leftIcon}
-          </div>
+    const handleContainerClick = () => {
+      if (type === "file" && fileInputRef.current) {
+        fileInputRef.current.click()
+      }
+    }
+
+    const renderFileInput = () => (
+      <div
+        className={cn(
+          "relative cursor-pointer",
+          isDragging && "ring-2 ring-primary ring-offset-2"
         )}
+        onClick={handleContainerClick}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <input
-          id={inputId}
-          type={type}
-          className={cn(
-            inputVariants({ variant, size }),
-            leftIcon && 'pl-10',
-            rightIcon && 'pr-10',
-            error && 'border-red-500 focus-visible:ring-red-500',
-            animated && 'transition-shadow duration-300',
-            className
-          )}
-          ref={ref}
-          disabled={disabled || loading}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          aria-invalid={!!error}
-          aria-describedby={
-            error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
-          }
+          type="file"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          ref={fileInputRef}
           {...props}
         />
-        {(rightIcon || loading) && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            {loading ? (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-blue-500"
-              />
-            ) : (
-              rightIcon
-            )}
+        <div className="flex items-center justify-between w-full">
+          <span className="truncate text-muted-foreground">
+            {props.value || props.placeholder || "Arrastra archivos o haz clic para seleccionar"}
+          </span>
+          <div className="flex items-center gap-2">
+            {leftIcon && <div className="text-muted-foreground">{leftIcon}</div>}
+            <div className="px-3 py-1 text-xs rounded-md bg-secondary text-secondary-foreground">
+              Examinar
+            </div>
           </div>
-        )}
-        {animated && isFocused && variant === 'chat' && (
-          <motion.div
-            className="absolute inset-0 rounded-full border border-blue-400/50"
-            initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: [0, 1, 0], scale: [1, 1.05, 1.1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
-        )}
+        </div>
       </div>
-    );
-
-    const Wrapper = animated ? motion.div : React.Fragment;
-    const wrapperProps = animated
-      ? {
-          animate: isFocused ? 'focused' : 'unfocused',
-          variants: animationVariants,
-          transition: { type: 'spring', stiffness: 300, damping: 20 },
-        }
-      : {};
+    )
 
     return (
       <div className="w-full space-y-2">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-gray-300"
+          <label 
+            htmlFor={props.id} 
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
           >
             {label}
           </label>
         )}
-        {animated ? (
-          <Wrapper {...wrapperProps} className="block">
-            {InputElement}
-          </Wrapper>
-        ) : (
-          <Wrapper>
-            {InputElement}
-          </Wrapper>
-        )}
-        {error && (
+        
+        <div className="relative">
+          {leftIcon && type !== "file" && (
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+              {leftIcon}
+            </div>
+          )}
+          
+          {type === "file" ? (
+            renderFileInput()
+          ) : (
+            <input
+              type={type}
+              className={cn(
+                inputVariants({ variant, size, className }),
+                leftIcon && "pl-10",
+                rightIcon && "pr-10",
+                isFocused && variant === "glass" && "bg-white/20 dark:bg-black/20",
+                error && "border-destructive focus-visible:ring-destructive"
+              )}
+              ref={ref}
+              onFocus={(e) => {
+                setIsFocused(true)
+                props.onFocus?.(e)
+              }}
+              onBlur={(e) => {
+                setIsFocused(false)
+                props.onBlur?.(e)
+              }}
+              aria-invalid={!!error}
+              aria-describedby={error ? `${props.id}-error` : helperText ? `${props.id}-helper` : undefined}
+              {...props}
+            />
+          )}
+          
+          {rightIcon && type !== "file" && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+              {rightIcon}
+            </div>
+          )}
+        </div>
+        
+        {(error || helperText) && (
           <p
-            id={`${inputId}-error`}
-            className="text-sm text-red-500"
-            role="alert"
+            id={error ? `${props.id}-error` : `${props.id}-helper`}
+            className={cn(
+              "text-sm",
+              error ? "text-destructive" : "text-muted-foreground"
+            )}
           >
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={`${inputId}-helper`} className="text-sm text-gray-500">
-            {helperText}
+            {error || helperText}
           </p>
         )}
       </div>
-    );
+    )
   }
-);
+)
 
-Input.displayName = 'Input';
+Input.displayName = "Input"
 
-export { Input, inputVariants };
+export { Input, inputVariants }

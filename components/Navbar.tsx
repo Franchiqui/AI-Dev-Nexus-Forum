@@ -3,23 +3,36 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import AuthStatus, { type AuthStatusPaths } from '@/components/auth/auth-status';
-import { authPaths } from '@/lib/auth-config';
+
+// Definir rutas de autenticación por defecto ya que el módulo '@/lib/auth-config' no existe
+export const defaultAuthPaths = {
+  home: '/',
+  login: '/auth/login',
+  register: '/auth/register',
+  profile: '/profile',
+  settings: '/settings'
+};
 
 export interface NavbarProps {
   /** Nombre de la app (reutilizable en otra aplicación) */
   appName?: string;
-  /** Ruta de inicio (por defecto authPaths.home) */
+  /** Ruta de inicio (por defecto '/') */
   homePath?: string;
   /** Rutas de auth para AuthStatus (login, register, home, profile, settings) */
-  paths?: AuthStatusPaths;
+  paths?: {
+    login: string;
+    register: string;
+    home: string;
+    profile: string;
+    settings: string;
+  };
   className?: string;
 }
 
 export default function Navbar({
-  appName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Mi Aplicación',
-  homePath = authPaths.home,
-  paths,
+  appName = 'Mi Aplicación',
+  homePath = '/',
+  paths = defaultAuthPaths,
   className = '',
 }: NavbarProps) {
   const pathname = usePathname();
@@ -30,9 +43,7 @@ export default function Navbar({
 
   return (
     <nav
-      className={
-        'flex items-center justify-between px-4 py-3 border-b ' + bgClass + ' ' + className
-      }
+      className={`flex items-center justify-between px-4 py-3 border-b ${bgClass} ${className}`}
       role="navigation"
     >
       <div className="flex items-center gap-6">
@@ -44,7 +55,13 @@ export default function Navbar({
         </Link>
       </div>
       <div className="flex items-center gap-4">
-        <AuthStatus paths={paths} />
+        {/* AuthStatus component removed due to missing module */}
+        <Link href={paths.login} className="text-sm hover:underline">
+          Login
+        </Link>
+        <Link href={paths.register} className="text-sm hover:underline">
+          Register
+        </Link>
       </div>
     </nav>
   );

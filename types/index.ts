@@ -1,583 +1,287 @@
 export interface User {
   id: string;
   email: string;
-  username: string;
+  name: string;
   avatarUrl?: string;
-  bio?: string;
-  joinDate: Date;
-  reputation: number;
-  isOnline: boolean;
-  lastSeen?: Date;
-}
-
-export interface UserProfile extends User {
-  skills: Skill[];
-  projects: Project[];
-  contributions: Contribution[];
-  badges: Badge[];
-  following: string[];
-  followers: string[];
-  notificationSettings: NotificationSettings;
-}
-
-export interface Skill {
-  id: string;
-  name: string;
-  category: SkillCategory;
-  level: number; // 1-5
-  yearsOfExperience: number;
-}
-
-export type SkillCategory = 
-  | 'machine-learning'
-  | 'deep-learning'
-  | 'nlp'
-  | 'computer-vision'
-  | 'reinforcement-learning'
-  | 'data-science'
-  | 'ml-ops'
-  | 'other';
-
-export interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  earnedAt: Date;
-}
-
-// Forum types
-export interface Thread {
-  id: string;
-  title: string;
-  content: string;
-  authorId: string;
-  author?: User;
-  tags: ThreadTag[];
-  category: ThreadCategory;
-  upvotes: number;
-  downvotes: number;
-  views: number;
-  isPinned: boolean;
-  isLocked: boolean;
+  storageUsed: number;
+  storageLimit: number;
   createdAt: Date;
   updatedAt: Date;
-  lastActivityAt: Date;
-  replyCount: number;
 }
 
-export interface ThreadTag {
-  id: string;
-  name: string;
-  color: string;
-}
-
-export type ThreadCategory = 
-  | 'discussion'
-  | 'question'
-  | 'tutorial'
-  | 'showcase'
-  | 'challenge'
-  | 'announcement'
-  | 'job';
-
-export interface Reply {
-  id: string;
-  threadId: string;
-  content: string;
-  authorId: string;
-  author?: User;
-  upvotes: number;
-  downvotes: number;
-  isSolution: boolean;
-  isEdited: boolean;
-  createdAt: Date;
-  updatedAt?: Date;
-}
-
-export interface Vote {
+export interface MediaFile {
   id: string;
   userId: string;
-  threadId?: string;
-  replyId?: string;
-  type: 'upvote' | 'downvote';
+  filename: string;
+  originalFilename: string;
+  fileType: MediaFileType;
+  mimeType: string;
+  size: number;
+  url: string;
+  thumbnailUrl?: string;
+  duration?: number; // For audio/video in seconds
+  width?: number; // For images/video
+  height?: number; // For images/video
+  metadata: MediaMetadata;
+  tags: string[];
+  isFavorite: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// AI Sandbox types
-export interface CodeSnippet {
-  id: string;
-  title: string;
+export type MediaFileType = 'image' | 'video' | 'audio' | 'document' | 'other';
+
+export interface MediaMetadata {
+  title?: string;
   description?: string;
-  code: string;
-  language: CodeLanguage;
-  framework?: Framework;
-  authorId: string;
-  author?: User;
-  tags: string[];
-  upvotes: number;
-  forks: number;
-  isPublic: boolean;
-  createdAt: Date;
+  artist?: string;
+  album?: string;
+  year?: number;
+  genre?: string;
+  cameraMake?: string;
+  cameraModel?: string;
+  exposureTime?: string;
+  fNumber?: number;
+  iso?: number;
+  focalLength?: number;
+  location?: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+  };
+  customTags: Record<string, string>;
 }
 
-export type CodeLanguage = 
-  | 'python'
-  | 'javascript'
-  | 'typescript'
-  | 'r'
-  | 'julia'
-  | 'other';
-
-export type Framework = 
-  | 'tensorflow'
-  | 'pytorch'
-  | 'keras'
-  | 'scikit-learn'
-  | 'huggingface'
-  | 'langchain'
-  | 'other';
-
-export interface SandboxSession {
-  id: string;
-  userId?: string;
-  codeSnippetId?: string;
-  code: string;
-  language: CodeLanguage;
-  output?: SandboxOutput[];
-  isRunning: boolean;
-  createdAt: Date;
-}
-
-export interface SandboxOutput {
-  type: 'stdout' | 'stderr' | 'result' | 'error';
-  content: string;
-}
-
-// Model Zoo types
-export interface AIModel {
-  id: string;
-  name: string;
-  description: string;
-  authorId: string;
-  author?: User;
-  modelType: ModelType;
-  framework: Framework;
-  tags: string[];
-  metrics: ModelMetrics;
-  codeUrl?: string;
-  demoUrl?: string;
-  paperUrl?: string;
-  upvotes: number;
-  downloads: number;
-  createdAt: Date;
-  updatedAt: Date;
-  isVerified: boolean;
-  license?: string;
-}
-
-export type ModelType = 
-|'classification' 
-|'regression' 
-|'generative' 
-|'transformer' 
-|'cnn' 
-|'rnn' 
-|'gan' 
-|'other';
-
-export interface ModelMetrics {
-  accuracy?: number;
-  precision?: number;
-  recall?: number;
-  f1Score?: number;
-  inferenceTime?: number;
-  modelSize?: number;
-  trainingTime?: number;
-}
-
-// Challenges types
-export interface Challenge {
-  id: string;
-  title: string;
-  description: string;
-  difficulty: ChallengeDifficulty;
-  category: SkillCategory;
-  requirements: ChallengeRequirement[];
-  testCases: TestCase[];
-  starterCode?: string;
-  solutionTemplate?: string;
-  startDate: Date;
-  endDate: Date;
-  participants: number;
-  submissions: ChallengeSubmission[];
-  createdAt: Date;
-}
-
-export type ChallengeDifficulty = 
-|'beginner' 
-|'intermediate' 
-|'advanced' 
-|'expert';
-
-export interface ChallengeRequirement {
-  id: string;
-  description: string;
-  isRequired: boolean;
-}
-
-export interface TestCase {
-  id: string;
-  input: any;
-  expectedOutput: any;
-  isHidden: boolean;
-}
-
-export interface ChallengeSubmission {
-  id: string;
-  challengeId: string;
-  userId: string;
-  user?: User;
-  code: string;
-  language: CodeLanguage;
-  passedTests: number;
-  totalTests: number;
-  score: number;
-  submittedAt: Date;
-  executionTime?: number;
-}
-
-// Chat and assistant types
-export interface ChatMessage {
-  id: string;
-  roomId: string;
-  senderId?: string;
-  sender?: User;
-  content: string;
-  type: MessageType;
-  metadata?: ChatMetadata;
-  createdAt: Date;
-}
-
-export type MessageType = 
-|'text' 
-|'code' 
-|'image' 
-|'file' 
-|'system';
-
-export interface ChatMetadata {
-  codeLanguage?: CodeLanguage;
-  fileName?: string;
-  fileSize?: number;
-  modelReference?: string;
-}
-
-export interface ChatRoom {
-  id: string;
-  name?: string;
-  type: ChatRoomType;
-  participants: string[];
-  lastMessage?: ChatMessage;
-  createdAt: Date;
-  updatedAt: Date;
-  unreadCount?: number;
-}
-
-export type ChatRoomType = 
-|'direct' 
-|'group' 
-|'thread' 
-|'assistant';
-
-// Networking and collaboration types
 export interface Project {
   id: string;
+  userId: string;
   name: string;
-  description: string;
-  ownerId: string;
-  owner?: User;
-  collaborators: ProjectCollaborator[];
-  technologies: Technology[];
-  githubUrl?: string;
-  demoUrl?: string;
-  status: ProjectStatus;
-  lookingForRoles?: Role[];
+  description?: string;
+  coverMediaId?: string;
+  items: ProjectItem[];
+  isPublic: boolean;
+  shareLink?: string;
+  viewCount: number;
+  settings: ProjectSettings;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type ProjectStatus = 
-|'planning' 
-|'development' 
-|'beta' 
-|'released' 
-|'archived';
-
-export interface ProjectCollaborator {
-  userId: string;
-  user?: User;
-  role: Role;
-  joinedAt: Date;
+export interface ProjectItem {
+  id: string;
+  mediaFileId: string;
+  position: number;
+  caption?: string;
+  startTime?: number; // For video/audio clips
+  endTime?: number; // For video/audio clips
 }
 
-export type Role = 
-|'ml-engineer' 
-|'data-scientist' 
-|'backend-dev' 
-|'frontend-dev' 
-|'researcher' 
-|'product-manager';
+export interface ProjectSettings {
+  layout: 'grid' | 'carousel' | 'slideshow';
+  autoplay: boolean;
+  transitionSpeed: number;
+  showCaptions: boolean;
+}
 
-export interface Technology {
+export interface Gallery extends Omit<Project, 'items'> {
+  items: GalleryItem[];
+}
+
+export interface GalleryItem {
+  id: string;
+  mediaFileId: string;
+  position: number;
+}
+
+// Dashboard types
+export interface DashboardWidget {
+  id: string;
+  type: DashboardWidgetType;
+  position: WidgetPosition;
+  size: WidgetSize;
+  data?: Record<string, unknown>;
+}
+
+export type DashboardWidgetType = 
+  | 'recent-files'
+  | 'active-projects'
+  | 'storage-usage'
+  | 'suggestions'
+  | 'quick-actions'
+  | 'activity-feed';
+
+export interface WidgetPosition {
+  x: number;
+  y: number;
+}
+
+export interface WidgetSize {
+  width: number;
+  height: number;
+}
+
+// Editor types
+export type EditorType = 'image' | 'video' | 'audio' | 'document';
+
+export interface ImageEditState {
+  brightness: number; // -100 to 100
+  contrast: number; // -100 to 100
+  saturation: number; // -100 to 100
+  hue: number; // -180 to 180
+  blur: number; // 0 to 100
+  crop?: CropRegion;
+}
+
+export interface CropRegion {
+  x: number; // percentage
+  y: number; // percentage
+  width: number; // percentage
+  height: number; // percentage
+}
+
+export interface AudioEditState {
+  volume: number; // -50 to +50 dB
+  fadeInDuration: number; // seconds
+  fadeOutDuration: number; // seconds
+  trimStart?: number; // seconds
+  trimEnd?: number; // seconds
+}
+
+export interface VideoEditState {
+  trimStart?: number; // seconds
+  trimEnd?: number; // seconds
+  brightness?: number; // -100 to 100
+  contrast?: number; // -100 to 100
+  saturation?: number; // -100 to 100
+  hue?: number; // -180 to 180
+  blur?: number; // 0 to 20
+  timeline?: TimelineState;
+  textClips?: TextClip[];
+}
+
+export interface TextClip {
+  id: string;
+  text: string;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  backgroundColor: string;
+  position: { x: number; y: number };
+  startTime: number;
+  duration: number;
+  opacity: number;
+  textAlign: 'left' | 'center' | 'right';
+}
+
+export interface TimelineState {
+  duration: number; // total duration in seconds
+  currentTime: number; // current playback position in seconds
+  zoom: number; // zoom level (pixels per second)
+  tracks: TimelineTrack[];
+}
+
+export interface TimelineTrack {
+  id: string;
+  type: TrackType;
+  name: string;
+  clips: TimelineClip[];
+  isMuted?: boolean;
+  isLocked?: boolean;
+  volume?: number; // 0-1 for audio tracks
+}
+
+export type TrackType = 'video' | 'audio' | 'text';
+
+export type TransitionType = 'none' | 'fade' | 'slide-left' | 'slide-right' | 'slide-up' | 'slide-down' | 'zoom-in' | 'zoom-out' | 'blur' | 'dissolve';
+
+export interface TimelineClip {
+  id: string;
+  trackId: string;
+  mediaFileId?: string;
+  type: TrackType;
+  startTime: number; // position on timeline in seconds
+  duration: number; // duration on timeline in seconds
+  sourceStartTime?: number; // where to start in source media
+  sourceDuration?: number; // how much of source media to use
+  
+  // Text-specific properties
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  color?: string;
+  position?: { x: number; y: number };
+  
+  // Common properties
+  volume?: number; // 0-1
+  opacity?: number; // 0-1
+  
+  // Visual properties
+  thumbnailUrl?: string;
+  backgroundColor?: string; // background color for text clips
+
+  // Transition properties
+  transitionIn?: {
+    type: TransitionType;
+    duration: number;
+  };
+  transitionOut?: {
+    type: TransitionType;
+    duration: number;
+  };
+
+  // Effects properties
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  hue?: number;
+  blur?: number;
+}
+
+export interface TextEditState {
+  content: string;
+  fontSize?: number;
+  fontFamily?: string;
+  lineHeight?: number;
+  wordWrap?: boolean;
+}
+
+// Effects and filters
+export interface MediaEffect {
   id: string;
   name: string;
-  category: SkillCategory;
+  category: EffectCategory;
+  type: EffectType;
+  intensityRange: [number, number]; // min, max
 }
 
-export interface CollaborationRequest {
+export type EffectCategory = 
+  | 'vintage'
+  | 'modern'
+  | 'cinematic'
+  | 'energetic'
+  | 'artistic'
+  | 'black-white';
+
+export type EffectType = 'image' | 'audio' | 'video';
+
+// Export and sharing
+export interface ExportPreset {
   id: string;
-  projectId: string;
-  project?: Project;
-  senderId: string;
-  sender?: User;
-  receiverId: string;
-  receiver?: User;
-  message?: string;
-  status: RequestStatus;
-  createdAt: Date;
-}
-
-export type RequestStatus = 
-|'pending' 
-|'accepted' 
-|'rejected';
-
-// Trends and analytics types
-export interface TrendData {
-  technologyId: string;
-  technologyName: string;
-  category: SkillCategory;
-  discussionCount: number;
-  mentionGrowth: number; // percentage
-  averageSentiment?: number; // -1 to +1
-  relatedTechnologies?: {
-    id: string;
-    name: string;
-    correlation: number;
-  }[];
-}
-
-export interface GitHubTrend {
-  id: string;
-  repoName: string;
-  owner: string;
-  description: string;
-  stars: number;
-  forks: number;
-  language: CodeLanguage;
-  framework?: Framework;
-  trendingScore: number;
-  url: string;
-}
-
-// Dashboard and personalization types
-export interface UserPreferences {
-  theme: AppTheme;
-  notifications: NotificationSettings;
-  emailFrequency: EmailFrequency;
-  defaultCodeLanguage: CodeLanguage;
-  showOnlineStatus: boolean;
-}
-
-export type AppTheme = 
-'dark'
-
-| 'light'
-
-| 'high-contrast'
-
-| 'auto';
-
-export interface NotificationSettings {
-  emailThreadReplies: boolean;
-  emailChallengeUpdates: boolean;
-  emailCollaborationRequests: boolean;
-  pushThreadReplies: boolean;
-  pushChallengeUpdates: boolean;
-  pushCollaborationRequests: boolean;
-}
-
-export type EmailFrequency = 
-'realtime'
-
-| 'daily'
-
-| 'weekly'
-
-| 'never';
-
-export interface ActivityFeedItem {
-  id: string;
-  userId: string;
-  user?: User;
-  type: ActivityType;
-  targetId?: string;
-  targetType?: ActivityTargetType;
-  data?: Record<string, any>;
-  createdAt: Date;
-}
-
-export type ActivityType = 
-'thread_created'
-
-| 'reply_posted'
-
-| 'challenge_submitted'
-
-| 'model_shared'
-
-| 'project_created'
-
-| 'collaboration_requested'
-
-| 'badge_earned';
-
-export type ActivityTargetType = 
-'thread'
-
-| 'reply'
-
-| 'challenge'
-
-| 'model'
-
-| 'project'
-
-| 'user';
-
-// Contribution tracking
-export interface Contribution {
-  id: string;
-  userId: string;
-  user?: User;
-  type: ContributionType;
-  points: number;
-  description: string;
-  createdAt: Date;
-}
-
-export type ContributionType = 
-'reply_solution'
-
-| 'challenge_winner'
-
-| 'model_shared'
-
-| 'tutorial_written'
-
-| 'bug_report'
-
-| 'feature_suggestion';
-
-// Search and filtering types
-export interface SearchFilters {
-  query?: string;
-  categories?: ThreadCategory[];
-  tags?: string[];
-  languages?: CodeLanguage[];
-  frameworks?: Framework[];
-  difficulty?: ChallengeDifficulty[];
-  timeRange?: TimeRange;
-  sortBy?: SortOption;
-}
-
-export type TimeRange = 
-'all'
-| 'today'
-| 'week'
-
-| 'month'
-
-| 'year';
-
-export type SortOption = 
-'relevance'
-
-| 'newest'
-
-| 'popular'
-
-| 'most_voted'
-
-| 'trending';
-
-// API response types
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-  timestamp: Date;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
-
-// Form validation types
-export interface ThreadFormData {
-  title: string;
-  content: string;
-  category: ThreadCategory;
-  tags: ThreadTag[];
-}
-
-export interface ReplyFormData {
-  content: string;
-  threadId: string;
-}
-
-export interface CodeSnippetFormData {
-  title: string;
+  name: string;
   description?: string;
-  code: string;
-  language: CodeLanguage;
-  framework?: Framework;
-  tags: string[];
-  isPublic: boolean;
+  format: 'jpg' | 'png' | 'webp';
+  quality: number; // 0-100
+  width?: number;
+  height?: number;
+  maintainAspectRatio: boolean;
 }
 
-// Event types for real-time features
-export interface SocketEvent<T = any> {
-  type: SocketEventType;
-  data?: T;
-  timestamp: Date;
+export interface ExportSettings {
+  presetId?: string;
+  format: 'jpg' | 'png' | 'webp';
+  quality: number;
+  width?: number;
+  height?: number;
+  maintainAspectRatio: boolean;
+  includeMetadata: boolean;
 }
-
-export type SocketEventType = 
-'message_sent'
-
-| 'user_online'
-
-| 'user_offline'
-
-| 'thread_updated'
-
-| 'challenge_progress'
-
-| 'sandbox_output'
-
-| 'notification';
-
-// Utility types
-export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
-
-export type Nullable<T> = T | null | undefined;
-
-export type DeepPartial<T> = T extends object ? { [P in keyof T]?: DeepPartial<T[P]> } : T;
